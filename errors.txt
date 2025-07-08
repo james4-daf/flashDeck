@@ -1,0 +1,7 @@
+108:43  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+71:15  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+11:40  Error: 'userId' is defined but never used.  @typescript-eslint/no-unused-vars
+41:41  Error: '_attempts' is defined but never used.  @typescript-eslint/no-unused-vars
+6:11  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+10:14  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+57:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any

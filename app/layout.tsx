@@ -1,10 +1,10 @@
-import { AuthProvider } from '@/lib/AuthContext';
+import { Providers } from '@/app/providers';
 import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'FlashDeck',
-  description: 'FlashDeck',
+  title: 'FlashWeb',
+  description: 'FlashWeb',
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

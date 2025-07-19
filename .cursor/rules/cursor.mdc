@@ -7,7 +7,7 @@ alwaysApply: true
 This project is `flashdeck.dev` — a web-based flashcard platform for learning JavaScript theory using spaced repetition.
 
 - Built with Next.js, TypeScript, Tailwind, and shadcn/ui
-- Uses Supabase for auth and database (RLS enabled)
+- Uses convex for auth and database (RLS enabled)
 - Implements a custom spaced repetition engine (Anki-style SRS)
 - Users get a free 5-day trial, then pay $34/year for full access
 - The app tracks user flashcard progress and schedules next reviews

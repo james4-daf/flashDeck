@@ -10,12 +10,15 @@
     "build:errors": "npm run build 2>&1 | awk '/Error:/ {print prev} {prev=$0} /Error:/ {print; count++} END {print \"--- Error count:\", count}'"
   },
   "dependencies": {
+    "@auth/core": "^0.37.0",
+    "@convex-dev/auth": "^0.0.87",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@supabase/supabase-js": "^2.50.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "convex": "^1.25.4",
     "lucide-react": "^0.525.0",
     "next": "15.3.5",
     "prism-react-renderer": "^2.4.1",

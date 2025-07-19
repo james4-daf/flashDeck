@@ -17,6 +17,8 @@ export default function Dashboard() {
     correctAttempts: 0,
     accuracy: 0,
     dueToday: 0,
+    cardsAttempted: 0,
+    totalFlashcards: 0,
   });
   const [isStudying, setIsStudying] = useState(false);
   const router = useRouter();
@@ -155,10 +157,10 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
               <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                Total Attempts
+                Cards Progress
               </h3>
               <p className="text-3xl font-bold text-blue-600">
-                {stats.totalAttempts}
+                {stats.cardsAttempted}/{stats.totalFlashcards}
               </p>
               <p className="text-sm text-blue-700 mt-1">Cards studied</p>
             </div>

@@ -52,6 +52,13 @@ export const getUserAttempts = async (userId: string) => {
   return data;
 };
 
+// Helper function to calculate next review date
+const calculateNextReviewDate = (intervalHours: number): Date => {
+  const nextReviewAt = new Date();
+  nextReviewAt.setHours(nextReviewAt.getHours() + intervalHours);
+  return nextReviewAt;
+};
+
 // Record a flashcard attempt
 export const recordAttempt = async (
   userId: string,
@@ -60,71 +67,110 @@ export const recordAttempt = async (
   response: unknown,
   timeSpentSeconds: number,
 ) => {
-  // Get existing attempt or create new one
-  const { data: existingAttempt } = await supabase
-    .from('user_flashcard_attempts')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('flashcard_id', flashcardId)
-    .single();
+  // Check if user is authenticated
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
 
-  if (existingAttempt) {
-    // Update existing attempt with SRS algorithm
-    const newEaseFactor = calculateNewEaseFactor(
-      existingAttempt.ease_factor,
-      isCorrect,
-    );
-    const newInterval = calculateNewInterval(
-      existingAttempt.interval,
-      newEaseFactor,
-      isCorrect,
-    );
-    // Clamp interval again for safety
-    const safeInterval = Math.max(1, Math.min(newInterval, 365));
-    const nextReviewAt = new Date();
-    nextReviewAt.setDate(nextReviewAt.getDate() + safeInterval);
+  if (sessionError) {
+    console.error('Session error:', sessionError);
+    throw new Error('Authentication session error: ' + sessionError.message);
+  }
 
-    const { data, error } = await supabase
+  if (!session?.user) {
+    console.error('No authenticated user found');
+    throw new Error('User not authenticated');
+  }
+
+  if (session.user.id !== userId) {
+    console.error('User ID mismatch:', {
+      sessionUserId: session.user.id,
+      providedUserId: userId,
+    });
+    throw new Error('User ID mismatch');
+  }
+
+  try {
+    // Get existing attempt or create new one
+    const { data: existingAttempt, error: fetchError } = await supabase
       .from('user_flashcard_attempts')
-      .update({
-        ease_factor: newEaseFactor,
-        interval: safeInterval,
-        next_review_at: nextReviewAt.toISOString(),
-        review_count: existingAttempt.review_count + 1,
-        last_response: response,
-        is_correct: isCorrect,
-        time_spent_seconds: timeSpentSeconds,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', existingAttempt.id)
-      .select()
+      .select('*')
+      .eq('user_id', userId)
+      .eq('flashcard_id', flashcardId)
       .single();
 
-    if (error) throw error;
-    return data;
-  } else {
-    // Create new attempt
-    const nextReviewAt = new Date();
-    nextReviewAt.setDate(nextReviewAt.getDate() + (isCorrect ? 1 : 0));
+    // Handle fetch errors (except for "no rows returned" which is expected for new cards)
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Error fetching existing attempt:', fetchError);
+      throw fetchError;
+    }
 
-    const { data, error } = await supabase
-      .from('user_flashcard_attempts')
-      .insert({
-        user_id: userId,
-        flashcard_id: flashcardId,
-        ease_factor: 2.5,
-        interval: isCorrect ? 1 : 0,
-        next_review_at: nextReviewAt.toISOString(),
-        review_count: 1,
-        last_response: response,
-        is_correct: isCorrect,
-        time_spent_seconds: timeSpentSeconds,
-      })
-      .select()
-      .single();
+    if (existingAttempt) {
+      // Update existing attempt with SRS algorithm
+      const newEaseFactor = calculateNewEaseFactor(
+        existingAttempt.ease_factor,
+        isCorrect,
+      );
+      const newInterval = calculateNewInterval(
+        existingAttempt.interval,
+        newEaseFactor,
+        isCorrect,
+      );
 
-    if (error) throw error;
-    return data;
+      const nextReviewAt = calculateNextReviewDate(newInterval);
+
+      const { data, error } = await supabase
+        .from('user_flashcard_attempts')
+        .update({
+          ease_factor: newEaseFactor,
+          interval: newInterval,
+          next_review_at: nextReviewAt.toISOString(),
+          review_count: existingAttempt.review_count + 1,
+          last_response: response,
+          is_correct: isCorrect,
+          time_spent_seconds: timeSpentSeconds,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingAttempt.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating attempt:', error);
+        throw error;
+      }
+      return data;
+    } else {
+      // Create new attempt
+      const initialInterval = isCorrect ? 4 : 0; // 4 hours if correct, 0 hours (now) if wrong
+      const nextReviewAt = calculateNextReviewDate(initialInterval);
+
+      const { data, error } = await supabase
+        .from('user_flashcard_attempts')
+        .insert({
+          user_id: userId,
+          flashcard_id: flashcardId,
+          ease_factor: 2.5,
+          interval: initialInterval,
+          next_review_at: nextReviewAt.toISOString(),
+          review_count: 1,
+          last_response: response,
+          is_correct: isCorrect,
+          time_spent_seconds: timeSpentSeconds,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating attempt:', error);
+        throw error;
+      }
+      return data;
+    }
+  } catch (error) {
+    console.error('recordAttempt caught error:', error);
+    throw error;
   }
 };
 
@@ -146,40 +192,63 @@ const calculateNewInterval = (
   isCorrect: boolean,
 ): number => {
   if (!isCorrect) {
-    return 0; // Review again today
+    return 0; // Review again now
   }
 
   if (currentInterval === 0) {
-    return 1; // First correct answer: review tomorrow
+    return 4; // First correct answer: review in 4 hours
   }
 
-  if (currentInterval === 1) {
-    return 6; // Second correct answer: review in 6 days
+  if (currentInterval === 4) {
+    return 24; // Second correct answer: review in 24 hours (1 day)
   }
 
+  if (currentInterval === 24) {
+    return 48; // Third correct answer: review in 48 hours (2 days)
+  }
+
+  if (currentInterval === 48) {
+    return 96; // Fourth correct answer: review in 96 hours (4 days)
+  }
+
+  // For intervals >= 96 hours (4 days), use ease factor multiplication
   // Defensive: ensure numbers are valid
   if (!Number.isFinite(currentInterval) || !Number.isFinite(easeFactor))
-    return 1;
+    return 24;
   const interval = Math.round(currentInterval * easeFactor);
-  // Clamp to a reasonable max (e.g., 365 days)
-  return Math.max(1, Math.min(interval, 365));
+  // Clamp to a reasonable max (e.g., 504 hours = 21 days = 3 weeks)
+  return Math.max(24, Math.min(interval, 504));
 };
 
 // Get user stats
 export const getUserStats = async (userId: string) => {
-  const { data, error } = await supabase
+  // Get user attempts
+  const { data: attempts, error: attemptsError } = await supabase
     .from('user_flashcard_attempts')
     .select('*')
     .eq('user_id', userId);
 
-  if (error) throw error;
+  if (attemptsError) throw attemptsError;
 
-  const totalAttempts = data.length;
-  const correctAttempts = data.filter((a) => a.is_correct).length;
+  // Get total flashcard count
+  const { data: allFlashcards, error: flashcardsError } = await supabase
+    .from('flashcards')
+    .select('id')
+    .eq('is_active', true);
+
+  if (flashcardsError) throw flashcardsError;
+
+  const totalAttempts = attempts.length;
+  const correctAttempts = attempts.filter((a) => a.is_correct).length;
   const accuracy =
     totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0;
 
-  const dueToday = data.filter((a) => {
+  // Get unique flashcards attempted
+  const uniqueFlashcardsAttempted = new Set(attempts.map((a) => a.flashcard_id))
+    .size;
+  const totalFlashcards = allFlashcards.length;
+
+  const dueToday = attempts.filter((a) => {
     const nextReview = new Date(a.next_review_at);
     const today = new Date();
     return nextReview <= today;
@@ -190,5 +259,7 @@ export const getUserStats = async (userId: string) => {
     correctAttempts,
     accuracy: Math.round(accuracy),
     dueToday,
+    cardsAttempted: uniqueFlashcardsAttempted,
+    totalFlashcards,
   };
 };

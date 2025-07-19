@@ -22,12 +22,10 @@ export function CodeSnippetFlashcard({
   const [showAnswer, setShowAnswer] = useState(false);
   const [startTime] = useState(Date.now());
   const [pending, setPending] = useState<'correct' | 'incorrect' | null>(null);
-  const [answered, setAnswered] = useState(false);
 
   useEffect(() => {
     setShowAnswer(false);
     setPending(null);
-    setAnswered(false);
   }, [flashcard.id]);
 
   const handleShowAnswer = () => {
@@ -37,15 +35,12 @@ export function CodeSnippetFlashcard({
   const handleAnswer = (isCorrect: boolean) => {
     setPending(isCorrect ? 'correct' : 'incorrect');
     const timeSpent = Math.round((Date.now() - startTime) / 1000);
+
     onAnswer(
       isCorrect,
       { userAnswer: isCorrect ? 'correct' : 'incorrect' },
       timeSpent,
     );
-    setTimeout(() => {
-      setAnswered(true);
-      setPending(null);
-    }, 800);
   };
 
   // Prefer code_block property if present, otherwise extract from question
@@ -132,13 +127,28 @@ export function CodeSnippetFlashcard({
               )}
             </div>
 
-            {!answered ? (
+            {!pending ? (
               <div className="flex gap-4">
                 <Button
                   variant="outline"
                   onClick={() => handleAnswer(false)}
                   className="flex-1 bg-red-50 border-red-200 text-red-700 hover:bg-red-100 cursor-pointer"
-                  disabled={pending !== null}
+                >
+                  Incorrect
+                </Button>
+                <Button
+                  onClick={() => handleAnswer(true)}
+                  className="flex-1 bg-green-600 hover:bg-green-700 cursor-pointer"
+                >
+                  Correct
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-4">
+                <Button
+                  variant="outline"
+                  disabled
+                  className="flex-1 bg-red-50 border-red-200 text-red-700"
                 >
                   {pending === 'incorrect' ? (
                     <span className="flex items-center justify-center gap-2">
@@ -149,11 +159,7 @@ export function CodeSnippetFlashcard({
                     'Incorrect'
                   )}
                 </Button>
-                <Button
-                  onClick={() => handleAnswer(true)}
-                  className="flex-1 bg-green-600 hover:bg-green-700 cursor-pointer"
-                  disabled={pending !== null}
-                >
+                <Button disabled className="flex-1 bg-green-600">
                   {pending === 'correct' ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
@@ -162,12 +168,6 @@ export function CodeSnippetFlashcard({
                   ) : (
                     'Correct'
                   )}
-                </Button>
-              </div>
-            ) : (
-              <div className="flex justify-end">
-                <Button onClick={() => setShowAnswer(false)} className="w-32">
-                  Next Card
                 </Button>
               </div>
             )}

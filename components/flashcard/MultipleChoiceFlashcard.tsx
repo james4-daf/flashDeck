@@ -30,6 +30,17 @@ export function MultipleChoiceFlashcard({
   const [showResult, setShowResult] = useState(false);
   const [startTime] = useState(Date.now());
   const [pending, setPending] = useState(false);
+  const [shuffledOptions, setShuffledOptions] = useState<FlashcardOption[]>([]);
+
+  // Fisher-Yates shuffle algorithm for options
+  const shuffleOptions = (options: FlashcardOption[]): FlashcardOption[] => {
+    const shuffled = [...options];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
 
   // Reset state when flashcard changes
   useEffect(() => {
@@ -37,7 +48,9 @@ export function MultipleChoiceFlashcard({
     setSelectedAnswers([]);
     setShowResult(false);
     setPending(false);
-  }, [flashcard.id]);
+    // Shuffle options for this flashcard
+    setShuffledOptions(shuffleOptions(options));
+  }, [flashcard.id, options]);
 
   // Handle selection
   const handleSelectAnswer = (optionId: string) => {
@@ -102,7 +115,7 @@ export function MultipleChoiceFlashcard({
           : 'bg-white hover:bg-slate-50';
       }
     }
-    // Show correct/incorrect after submit
+    // Show correct/incorrect after submit - use original options for correctness
     const correctOptions = options
       .filter((opt) => opt.is_correct)
       .map((opt) => opt.id);
@@ -129,11 +142,10 @@ export function MultipleChoiceFlashcard({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          {options.map((option) => (
+          {shuffledOptions.map((option) => (
             <button
               key={option.id}
-              onClick={() => !showResult && handleSelectAnswer(option.id)}
-              disabled={showResult}
+              onClick={() => handleSelectAnswer(option.id)}
               className={`w-full p-4 text-left border rounded-lg transition-colors ${getOptionStyle(
                 option.id,
               )}`}
@@ -165,19 +177,20 @@ export function MultipleChoiceFlashcard({
         )}
 
         {showResult && (
-          <>
-            <div className="p-4 bg-slate-50 rounded-lg border mb-2">
-              <p className="text-sm text-slate-600">
-                {flashcard.explanation || 'Check your answer above!'}
-              </p>
-            </div>
-            <Button
-              onClick={handleNextCard}
-              className="w-full cursor-pointer mt-2"
-            >
-              Next Card
-            </Button>
-          </>
+          <div className="p-4 bg-slate-50 rounded-lg border mb-2">
+            <p className="text-sm text-slate-600">
+              {flashcard.explanation || 'Check your answer above!'}
+            </p>
+          </div>
+        )}
+
+        {showResult && (
+          <Button
+            onClick={handleNextCard}
+            className="w-full cursor-pointer mt-2"
+          >
+            Next Card
+          </Button>
         )}
       </CardContent>
     </Card>

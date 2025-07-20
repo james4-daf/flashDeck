@@ -1,41 +1,27 @@
-export interface Flashcard {
-  id: string;
-  category_id: string;
-  type_id: string;
+import type { Id } from '@/convex/_generated/dataModel';
+
+// Convex Flashcard Types
+export interface ConvexFlashcard {
+  _id: Id<'flashcards'>;
+  _creationTime: number;
   question: string;
-  answer: any; // JSONB - varies by type
-  explanation?: string;
-  difficulty_level: number;
-  tags: string[];
-  metadata?: unknown;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  // Joined data from database queries
-  category?: FlashcardCategory;
-  type?: FlashcardType;
-  options?: FlashcardOption[];
-  code_block?: string; // Optional code block for code snippet flashcards
+  answer: string | string[];
+  type: 'basic' | 'multiple_choice' | 'true_false';
+  category: string;
+  options?: string[];
 }
 
-export interface FlashcardCategory {
-  id: string;
-  name: string;
-  description?: string;
-  color: string;
-  icon?: string;
-  created_at: string;
-  updated_at: string;
+export interface ConvexUserProgress {
+  _id: Id<'userProgress'>;
+  _creationTime: number;
+  userId: string;
+  flashcardId: Id<'flashcards'>;
+  nextReviewDate: number;
+  reviewCount: number;
+  lastCorrect: boolean;
 }
 
-export interface FlashcardType {
-  id: string;
-  name: string;
-  description?: string;
-  component_name: string;
-  created_at: string;
-}
-
+// Simplified option type for flashcard components
 export interface FlashcardOption {
   id: string;
   flashcard_id: string;
@@ -45,42 +31,13 @@ export interface FlashcardOption {
   created_at: string;
 }
 
-export interface UserFlashcardAttempt {
-  id: string;
-  user_id: string;
-  flashcard_id: string;
-  set_id?: string;
-  ease_factor: number;
-  interval: number;
-  next_review_at: string;
-  review_count: number;
-  last_response?: unknown;
-  is_correct?: boolean;
-  time_spent_seconds?: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface User {
-  id: string;
-  email?: string;
-  trial_expires_at: string;
-  pro: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-// Flashcard answer types
+// Answer types for different flashcard components
 export interface BasicAnswer {
   answer: string;
 }
 
 export interface MultipleChoiceAnswer {
   answer: string; // Single correct option
-}
-
-export interface MultipleAnswerAnswer {
-  answer: string[]; // Multiple correct options
 }
 
 export interface TrueFalseAnswer {
@@ -95,6 +52,9 @@ export interface CodeSnippetAnswer {
   answer: string;
 }
 
-export interface MatchingAnswer {
-  answer: Record<string, string>; // key-value pairs
+// Session statistics
+export interface SessionStats {
+  correct: number;
+  incorrect: number;
+  total: number;
 }

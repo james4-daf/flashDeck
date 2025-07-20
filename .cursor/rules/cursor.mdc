@@ -7,11 +7,10 @@ alwaysApply: true
 This project is `flashdeck.dev` — a web-based flashcard platform for learning JavaScript theory using spaced repetition.
 
 - Built with Next.js, TypeScript, Tailwind, and shadcn/ui
-- Uses convex for auth and database (RLS enabled)
-- Implements a custom spaced repetition engine (Anki-style SRS)
+- Uses **Convex** for auth and database with real-time updates
+- Implements a **simplified** spaced repetition engine (2-table design)
 - Users get a free 5-day trial, then pay $34/year for full access
 - The app tracks user flashcard progress and schedules next reviews
--
 
 # FlashDeck Project MDC Rules
 
@@ -19,102 +18,79 @@ This project is `flashdeck.dev` — a web-based flashcard platform for learning 
 
 - Use TypeScript syntax conventions and full type annotations when possible.
 - Tailwind CSS should follow utility-first principles — avoid deeply nested class strings.
-- Only use `async/await` with Supabase queries or API calls.
+- Only use `async/await` with external API calls (not needed for Convex queries/mutations).
 - Maintain minimal and clear logic in server and client components.
 
-# Auth (Supabase)
+# Auth (Convex Auth)
 
-- Do not modify Supabase auth logic in `lib/supabase.ts` unless explicitly asked.
-- `session` and `user` data should be securely fetched on the server where possible.
-- Protect RLS-sensitive queries with `auth.uid()` usage.
+- Use `useAuthActions()` from `@convex-dev/auth/react` for sign in/out
+- Use `useCurrentUser()` to get authenticated user data
+- Do not modify `convex/auth.ts` unless explicitly asked
+- Authentication state is handled automatically by `ConvexAuthProvider`
+- User data is stored in Convex auth tables, not custom user tables
+
+# Database (Convex)
+
+- All database operations use Convex queries and mutations
+- Use `useQuery()` for reading data with real-time updates
+- Use `useMutation()` for writing data
+- Always use the generated API from `@/convex/_generated/api`
+- Prefer Convex functions over complex client-side logic
+- Keep functions simple and focused on single responsibilities
 
 # Flashcard Logic
 
-- Do not modify the spaced repetition algorithm (`easeFactor`, `interval`, `nextReviewAt`) unless explicitly requested.
-- Use `user_flashcard_attempts` table responsibly — never expose internal SRS logic in the UI.
-- When fetching flashcards, preserve the "due only" logic based on `nextReviewAt <= now()`.
+- Use the simplified 2-table schema: `flashcards` and `userProgress`
+- Flashcards store `answer` as either `string` or `string[]` for multiple choice
+- SRS algorithm is simplified: powers of 2 (1, 2, 4, 8, 16 days)
+- Use `recordAttempt` mutation to track user progress
+- Filter due cards with `nextReviewDate <= now()`
 
 # Stripe Billing
 
-- Never expose `STRIPE_SECRET_KEY` or other private env vars to the client.
-- Keep Stripe logic in `/app/api/stripe/` endpoints only.
-- Ensure `trial_expires_at` and `pro` flags are enforced before allowing flashcard review.
+- Never expose `STRIPE_SECRET_KEY` or other private env vars to the client
+- Keep Stripe logic in `/app/api/stripe/` endpoints only
+- Ensure billing checks are enforced before allowing flashcard review
 
 # UI & Components (shadcn/ui)
 
-- Use [shadcn/ui](https://ui.shadcn.com/) components where available. Do not manually re-implement common UI patterns like `Dialog`, `Button`, or `Card`.
-- Custom components should follow shadcn structure and naming.
-- If modifying a `shadcn` component wrapper, keep its API consistent with the original.
+- Use [shadcn/ui](https://ui.shadcn.com/) components where available
+- Do not manually re-implement common UI patterns like `Dialog`, `Button`, or `Card`
+- Custom components should follow shadcn structure and naming
+- If modifying a `shadcn` component wrapper, keep its API consistent with the original
 
 # Frontend (Next.js + Tailwind)
 
-- Place UI elements inside `/components/` or `/components/ui/` as appropriate.
-- Ensure layouts are responsive — prioritize mobile-first styles.
-- Reuse layout components and typography primitives.
+- Place UI elements inside `/components/` or `/components/ui/` as appropriate
+- Ensure layouts are responsive — prioritize mobile-first styles
+- Reuse layout components and typography primitives
+- Use `'use client'` only when necessary (for hooks, state, event handlers)
 
-# API
+# Convex Functions
 
-- Validate all inputs to `/api/*` endpoints.
-- Use Zod or manual checks before writing to the database.
-- Always protect Supabase data writes/reads with role checks or `auth.uid()` logic.
+- Define queries in `convex/*.ts` files using the `query` wrapper
+- Define mutations in `convex/*.ts` files using the `mutation` wrapper
+- Use proper argument validation with `v` from `convex/values`
+- Keep functions focused and composable
+- Use indexes for efficient queries (defined in schema)
 
-# Don’t Touch
+# Don't Touch
 
 - Do not modify:
-  - `/supabase/migrations/`
+  - `convex/_generated/` files (auto-generated)
+  - `convex/auth.ts` (unless instructed)
+  - `convex/http.ts` (auth routes)
   - `.env.*` files
-  - Spaced repetition engine file (unless instructed)
+  - Spaced repetition algorithm in `userProgress.ts` (unless instructed)
   - Stripe webhook logic
 
-# FlashDeck Project MDC Rules
+# Migration Notes
 
-# General
+- **COMPLETED**: Migrated from Supabase to Convex
+- **COMPLETED**: Simplified database schema (7+ tables → 2 tables)
+- **COMPLETED**: Updated auth to use Convex Auth with Password provider
+- Schema is now much simpler and easier to maintain
+- Real-time updates come for free with Convex
 
-- Use TypeScript syntax conventions and full type annotations when possible.
-- Tailwind CSS should follow utility-first principles — avoid deeply nested class strings.
-- Only use `async/await` with Supabase queries or API calls.
-- Maintain minimal and clear logic in server and client components.
-
-# Auth (Supabase)
-
-- Do not modify Supabase auth logic in `lib/supabase.ts` unless explicitly asked.
-- `session` and `user` data should be securely fetched on the server where possible.
-- Protect RLS-sensitive queries with `auth.uid()` usage.
-
-# Flashcard Logic
-
-- Do not modify the spaced repetition algorithm (`easeFactor`, `interval`, `nextReviewAt`) unless explicitly requested.
-- Use `user_flashcard_attempts` table responsibly — never expose internal SRS logic in the UI.
-- When fetching flashcards, preserve the "due only" logic based on `nextReviewAt <= now()`.
-
-# Stripe Billing
-
-- Never expose `STRIPE_SECRET_KEY` or other private env vars to the client.
-- Keep Stripe logic in `/app/api/stripe/` endpoints only.
-- Ensure `trial_expires_at` and `pro` flags are enforced before allowing flashcard review.
-
-# UI & Components (shadcn/ui)
-
-- Use [shadcn/ui](https://ui.shadcn.com/) components where available. Do not manually re-implement common UI patterns like `Dialog`, `Button`, or `Card`.
-- Custom components should follow shadcn structure and naming.
-- If modifying a `shadcn` component wrapper, keep its API consistent with the original.
-
-# Frontend (Next.js + Tailwind)
-
-- Place UI elements inside `/components/` or `/components/ui/` as appropriate.
-- Ensure layouts are responsive — prioritize mobile-first styles.
-- Reuse layout components and typography primitives.
-
-# API
-
-- Validate all inputs to `/api/*` endpoints.
-- Use Zod or manual checks before writing to the database.
-- Always protect Supabase data writes/reads with role checks or `auth.uid()` logic.
-
-# Don’t Touch
-
-- Do not modify:
-  - `/supabase/migrations/`
-  - `.env.*` files
   - Spaced repetition engine file (unless instructed)
   - Stripe webhook logic

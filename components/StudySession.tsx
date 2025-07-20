@@ -3,12 +3,12 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { getDueFlashcards, recordAttempt } from '@/lib/flashcards';
-import type { Flashcard } from '@/lib/types';
+import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
+import type { ConvexFlashcard } from '@/lib/types';
+import { useMutation, useQuery } from 'convex/react';
 import { useEffect, useState } from 'react';
 import { BasicFlashcard } from './flashcard/BasicFlashcard';
-import { CodeSnippetFlashcard } from './flashcard/CodeSnippetFlashcard';
-import { FillBlankFlashcard } from './flashcard/FillBlankFlashcard';
 import { MultipleChoiceFlashcard } from './flashcard/MultipleChoiceFlashcard';
 import { TrueFalseFlashcard } from './flashcard/TrueFalseFlashcard';
 
@@ -17,28 +17,17 @@ interface StudySessionProps {
   onComplete: () => void;
 }
 
-const SUPPORTED_TYPES = [
-  'basic',
-  'multiple_choice',
-  'multiple_answer',
-  'true_false',
-  'fill_blank',
-  'code_snippet',
-];
-
 export function StudySession({ userId, onComplete }: StudySessionProps) {
-  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [sessionStats, setSessionStats] = useState({
     correct: 0,
     incorrect: 0,
     total: 0,
   });
 
-  useEffect(() => {
-    loadFlashcards();
-  }, []);
+  // Use Convex queries and mutations
+  const dueFlashcards = useQuery(api.flashcards.getDueFlashcards, { userId });
+  const recordAttempt = useMutation(api.userProgress.recordAttempt);
 
   // Fisher-Yates shuffle algorithm
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -50,42 +39,35 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
     return shuffled;
   };
 
-  const loadFlashcards = async () => {
-    try {
-      const dueFlashcards = await getDueFlashcards();
-      // Only include supported types
+  const [shuffledCards, setShuffledCards] = useState<ConvexFlashcard[]>([]);
+
+  useEffect(() => {
+    if (dueFlashcards) {
       const filtered = dueFlashcards.filter(
-        (f: Flashcard) =>
-          f.type?.name && SUPPORTED_TYPES.includes(f.type.name.toLowerCase()),
+        (card): card is ConvexFlashcard =>
+          card !== null &&
+          ['basic', 'multiple_choice', 'true_false'].includes(card.type),
       );
-
-      // Shuffle the flashcards for random order
       const shuffled = shuffleArray(filtered);
-
-      setFlashcards(shuffled);
+      setShuffledCards(shuffled);
       setSessionStats((prev) => ({ ...prev, total: shuffled.length }));
-    } catch (error) {
-      console.error('Error loading flashcards:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [dueFlashcards]);
 
   const handleAnswer = async (
     isCorrect: boolean,
     response: Record<string, unknown>,
     timeSpent: number,
   ) => {
-    const currentFlashcard = flashcards[currentIndex];
+    const currentCard = shuffledCards[currentIndex];
+    if (!currentCard) return;
 
     try {
-      await recordAttempt(
+      await recordAttempt({
         userId,
-        currentFlashcard.id,
+        flashcardId: currentCard._id,
         isCorrect,
-        response,
-        timeSpent,
-      );
+      });
 
       setSessionStats((prev) => ({
         ...prev,
@@ -93,50 +75,75 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
         incorrect: prev.incorrect + (isCorrect ? 0 : 1),
       }));
 
-      // Consistent timing for all card types - enough time to see feedback
-      setTimeout(() => {
-        if (currentIndex < flashcards.length - 1) {
-          setCurrentIndex(currentIndex + 1);
-        } else {
-          // Session complete
-          onComplete();
-        }
-      }, 1000);
+      // Move to next card or complete session
+      if (currentIndex + 1 >= shuffledCards.length) {
+        onComplete();
+      } else {
+        setCurrentIndex((prev) => prev + 1);
+      }
     } catch (error) {
-      console.error('Error recording attempt:', {
-        error,
-        userId,
-        flashcardId: currentFlashcard.id,
-        isCorrect,
-        response,
-        timeSpent,
-      });
-      // Show user-friendly error message
-      alert('Failed to record your answer. Please try again.');
+      console.error('Error recording attempt:', error);
     }
   };
 
   const renderFlashcard = () => {
-    if (currentIndex >= flashcards.length) return null;
-    const flashcard = flashcards[currentIndex];
-    const options = flashcard.options || [];
-    const typeName = flashcard.type?.name?.toLowerCase();
-    switch (typeName) {
+    if (currentIndex >= shuffledCards.length) {
+      // We're out of bounds - this shouldn't happen, but if it does, show completion
+      return (
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle>Session Complete!</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-slate-600 mb-4">
+              You've completed all flashcards in this session.
+            </p>
+            <Button onClick={onComplete} className="w-full">
+              Back to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    const flashcard = shuffledCards[currentIndex];
+    if (!flashcard) {
+      return (
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle>Error Loading Flashcard</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-slate-600 mb-4">
+              There was an issue loading the current flashcard.
+            </p>
+            <Button onClick={onComplete} className="w-full">
+              Back to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    switch (flashcard.type) {
       case 'basic':
         return <BasicFlashcard flashcard={flashcard} onAnswer={handleAnswer} />;
       case 'multiple_choice':
         return (
           <MultipleChoiceFlashcard
             flashcard={flashcard}
-            options={options}
-            onAnswer={handleAnswer}
-          />
-        );
-      case 'multiple_answer':
-        return (
-          <MultipleChoiceFlashcard
-            flashcard={flashcard}
-            options={options}
+            options={
+              flashcard.options?.map((option, index) => ({
+                id: index.toString(),
+                flashcard_id: flashcard._id,
+                option_text: option,
+                is_correct: Array.isArray(flashcard.answer)
+                  ? flashcard.answer.includes(option)
+                  : flashcard.answer === option,
+                order_index: index,
+                created_at: '',
+              })) || []
+            }
             onAnswer={handleAnswer}
           />
         );
@@ -144,20 +151,12 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
         return (
           <TrueFalseFlashcard flashcard={flashcard} onAnswer={handleAnswer} />
         );
-      case 'fill_blank':
-        return (
-          <FillBlankFlashcard flashcard={flashcard} onAnswer={handleAnswer} />
-        );
-      case 'code_snippet':
-        return (
-          <CodeSnippetFlashcard flashcard={flashcard} onAnswer={handleAnswer} />
-        );
       default:
         return null;
     }
   };
 
-  if (loading) {
+  if (dueFlashcards === undefined) {
     return (
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
@@ -168,7 +167,7 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
     );
   }
 
-  if (flashcards.length === 0) {
+  if (shuffledCards.length === 0) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
@@ -184,7 +183,9 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
     );
   }
 
-  const progress = ((currentIndex + 1) / flashcards.length) * 100;
+  // Handle out-of-bounds index for progress display
+  const displayIndex = Math.min(currentIndex + 1, shuffledCards.length);
+  const progress = (displayIndex / shuffledCards.length) * 100;
   const accuracy =
     sessionStats.total > 0
       ? Math.round((sessionStats.correct / sessionStats.total) * 100)
@@ -200,7 +201,7 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
               Study Session
             </h2>
             <p className="text-sm text-slate-600">
-              Card {currentIndex + 1} of {flashcards.length}
+              Card {displayIndex} of {shuffledCards.length}
             </p>
           </div>
           <div className="text-right">

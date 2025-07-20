@@ -2,12 +2,12 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Flashcard } from '@/lib/types';
+import type { ConvexFlashcard } from '@/lib/types';
 import { Highlight, themes } from 'prism-react-renderer';
 import { useEffect, useState } from 'react';
 
 interface CodeSnippetFlashcardProps {
-  flashcard: Flashcard;
+  flashcard: ConvexFlashcard;
   onAnswer: (
     isCorrect: boolean,
     response: Record<string, unknown>,
@@ -22,11 +22,13 @@ export function CodeSnippetFlashcard({
   const [showAnswer, setShowAnswer] = useState(false);
   const [startTime] = useState(Date.now());
   const [pending, setPending] = useState<'correct' | 'incorrect' | null>(null);
+  const [answered, setAnswered] = useState(false);
 
   useEffect(() => {
     setShowAnswer(false);
     setPending(null);
-  }, [flashcard.id]);
+    setAnswered(false);
+  }, [flashcard._id]);
 
   const handleShowAnswer = () => {
     setShowAnswer(true);
@@ -41,27 +43,19 @@ export function CodeSnippetFlashcard({
       { userAnswer: isCorrect ? 'correct' : 'incorrect' },
       timeSpent,
     );
+    setAnswered(true);
   };
 
-  // Prefer code_block property if present, otherwise extract from question
-  const getCode = (flashcard: Flashcard) => {
-    if (
-      flashcard.code_block &&
-      typeof flashcard.code_block === 'string' &&
-      flashcard.code_block.trim() !== ''
-    ) {
-      return flashcard.code_block.trim();
-    }
-    // Fallback: extract from question
-    // Look for code blocks marked with ``` or indented code
-    const codeBlockMatch = flashcard.question.match(
+  // Extract code from question - look for code blocks marked with ``` or indented code
+  const getCode = (question: string) => {
+    const codeBlockMatch = question.match(
       /```(?:javascript|js)?\n([\s\S]*?)```/,
     );
     if (codeBlockMatch) {
       return codeBlockMatch[1].trim();
     }
     // If no code block, try to find the last part that looks like code
-    const lines = flashcard.question.split('\n');
+    const lines = question.split('\n');
     const codeLines = lines.filter(
       (line) =>
         line.trim().startsWith('const ') ||
@@ -77,8 +71,15 @@ export function CodeSnippetFlashcard({
     return codeLines.join('\n');
   };
 
+  const getCorrectAnswer = () => {
+    if (typeof flashcard.answer === 'string') {
+      return flashcard.answer;
+    }
+    return flashcard.answer.join(', ');
+  };
+
   const questionText = flashcard.question.split('\n')[0]; // First line is usually the question
-  const code = getCode(flashcard);
+  const code = getCode(flashcard.question);
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -110,7 +111,11 @@ export function CodeSnippetFlashcard({
         </div>
 
         {!showAnswer ? (
-          <Button onClick={handleShowAnswer} className="w-full">
+          <Button
+            onClick={handleShowAnswer}
+            className="w-full"
+            disabled={answered}
+          >
             Show Answer
           </Button>
         ) : (
@@ -118,59 +123,35 @@ export function CodeSnippetFlashcard({
             {/* Show the answer */}
             <div className="p-4 bg-green-50 rounded-lg border border-green-200">
               <p className="font-medium text-green-900">
-                Answer: {flashcard.answer.answer}
+                Answer: {getCorrectAnswer()}
               </p>
-              {flashcard.explanation && (
-                <p className="text-sm text-green-700 mt-2">
-                  {flashcard.explanation}
-                </p>
-              )}
             </div>
 
-            {!pending ? (
-              <div className="flex gap-4">
-                <Button
-                  variant="outline"
-                  onClick={() => handleAnswer(false)}
-                  className="flex-1 bg-red-50 border-red-200 text-red-700 hover:bg-red-100 cursor-pointer"
-                >
-                  Incorrect
-                </Button>
-                <Button
-                  onClick={() => handleAnswer(true)}
-                  className="flex-1 bg-green-600 hover:bg-green-700 cursor-pointer"
-                >
-                  Correct
-                </Button>
-              </div>
-            ) : (
-              <div className="flex gap-4">
-                <Button
-                  variant="outline"
-                  disabled
-                  className="flex-1 bg-red-50 border-red-200 text-red-700"
-                >
-                  {pending === 'incorrect' ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></span>
-                      Incorrect
-                    </span>
-                  ) : (
-                    'Incorrect'
-                  )}
-                </Button>
-                <Button disabled className="flex-1 bg-green-600">
-                  {pending === 'correct' ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                      Correct
-                    </span>
-                  ) : (
-                    'Correct'
-                  )}
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-4">
+              <Button
+                variant="outline"
+                onClick={() => handleAnswer(false)}
+                className={`flex-1 transition-colors ${
+                  pending === 'incorrect'
+                    ? 'bg-red-500 text-white border-red-500'
+                    : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
+                }`}
+                disabled={pending !== null}
+              >
+                {pending === 'incorrect' ? '✓ Incorrect' : 'Incorrect'}
+              </Button>
+              <Button
+                onClick={() => handleAnswer(true)}
+                className={`flex-1 transition-colors ${
+                  pending === 'correct'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+                disabled={pending !== null}
+              >
+                {pending === 'correct' ? '✓ Correct' : 'Correct'}
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

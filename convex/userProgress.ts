@@ -63,3 +63,33 @@ export const recordAttempt = mutation({
     }
   },
 });
+
+// Get all user progress for debugging
+export const getAllUserProgress = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const userProgress = await ctx.db
+      .query('userProgress')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    // Also get the flashcard data for each progress record
+    const progressWithFlashcards = await Promise.all(
+      userProgress.map(async (progress) => {
+        const flashcard = await ctx.db.get(progress.flashcardId);
+        return {
+          ...progress,
+          flashcard: flashcard
+            ? {
+                question: flashcard.question,
+                type: flashcard.type,
+                category: flashcard.category,
+              }
+            : null,
+        };
+      }),
+    );
+
+    return progressWithFlashcards;
+  },
+});

@@ -1,94 +1,140 @@
 'use client';
 
 import { StudySession } from '@/components/StudySession';
-import { getUserStats } from '@/lib/flashcards';
-import { getCurrentUser, signOut } from '@/lib/supabase';
-import type { User } from '@/lib/types';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { api } from '@/convex/_generated/api';
+import { SignOutButton, useUser } from '@clerk/nextjs';
+import {
+  Authenticated,
+  Unauthenticated,
+  useMutation,
+  useQuery,
+} from 'convex/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-export default function Dashboard() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalAttempts: 0,
-    correctAttempts: 0,
-    accuracy: 0,
-    dueToday: 0,
-    cardsAttempted: 0,
-    totalFlashcards: 0,
+// Debug component to show user progress
+function UserProgressDebug({ userId }: { userId: string }) {
+  const userProgress = useQuery(api.userProgress.getAllUserProgress, {
+    userId,
   });
-  const [isStudying, setIsStudying] = useState(false);
+
+  if (!userProgress) {
+    return (
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-sm">User Progress Debug</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-slate-600">Loading progress...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle className="text-sm">User Progress Debug</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-blue-600 mb-2">
+          📊 Found {userProgress.length} progress records
+        </p>
+        <details className="text-xs text-slate-600">
+          <summary className="cursor-pointer hover:text-slate-900">
+            View progress records ({userProgress.length})
+          </summary>
+          <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+            {userProgress.map((progress) => (
+              <div
+                key={progress._id}
+                className="p-2 bg-slate-50 rounded border"
+              >
+                <div className="font-medium">
+                  {progress.flashcard?.question || 'Unknown flashcard'}
+                </div>
+                <div className="text-xs mt-1">
+                  <span className="inline-block mr-2">
+                    Reviews: {progress.reviewCount}
+                  </span>
+                  <span className="inline-block mr-2">
+                    Last: {progress.lastCorrect ? '✅' : '❌'}
+                  </span>
+                  <span className="inline-block">
+                    Next: {new Date(progress.nextReviewDate).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <>
+      <Unauthenticated>
+        <RedirectToLogin />
+      </Unauthenticated>
+
+      <Authenticated>
+        <DashboardContent />
+      </Authenticated>
+    </>
+  );
+}
+
+function RedirectToLogin() {
   const router = useRouter();
 
   useEffect(() => {
-    checkUser();
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      loadStats();
-    }
-  }, [user]);
-
-  const checkUser = async () => {
-    const { user, error } = await getCurrentUser();
-    if (error || !user) {
-      router.push('/');
-    } else {
-      setUser(mapSupabaseUserToLocal(user));
-    }
-    setLoading(false);
-  };
-
-  const loadStats = async () => {
-    try {
-      if (!user) return;
-      const userStats = await getUserStats(user.id);
-      setStats(userStats);
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    }
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
     router.push('/');
+  }, [router]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+      <p className="text-slate-600">
+        Not authenticated - redirecting to login...
+      </p>
+    </div>
+  );
+}
+
+function DashboardContent() {
+  const { user } = useUser();
+  const [isStudying, setIsStudying] = useState(false);
+
+  const flashcards = useQuery(api.flashcards.getAllFlashcards);
+  const dueFlashcards = useQuery(api.flashcards.getDueFlashcards, {
+    userId: user?.id || '',
+  });
+  const createSampleFlashcards = useMutation(
+    api.flashcards.createSampleFlashcards,
+  );
+
+  const handleCreateSamples = async () => {
+    try {
+      const result = await createSampleFlashcards({});
+      console.log('Sample flashcards created:', result);
+    } catch (error) {
+      console.error('Error creating samples:', error);
+    }
   };
 
   const handleStartStudying = () => {
     setIsStudying(true);
   };
 
-  const handleStudyComplete = () => {
+  const handleCompleteStudying = () => {
     setIsStudying(false);
-    loadStats(); // Refresh stats after study session
   };
-
-  // Map Supabase user to local User type
-  function mapSupabaseUserToLocal(user: SupabaseUser): User {
-    return {
-      id: user.id,
-      email: user.email ?? '',
-      trial_expires_at: '', // Set default or fetch from DB if needed
-      pro: false, // Set default or fetch from DB if needed
-      created_at: user.created_at ?? '',
-      updated_at: user.updated_at ?? '',
-    };
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (isStudying) {
     return (
@@ -96,26 +142,30 @@ export default function Dashboard() {
         <nav className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
-                <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-slate-600">Studying...</span>
-                <button
-                  onClick={() => setIsStudying(false)}
-                  className="bg-slate-600 text-white px-4 py-2 rounded-xl hover:bg-slate-700 transition-colors text-sm"
+              <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={handleCompleteStudying}
+                  className="text-sm"
                 >
-                  Exit Session
-                </button>
+                  Exit Study Session
+                </Button>
+                <SignOutButton>
+                  <button className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-sm">
+                    Sign Out
+                  </button>
+                </SignOutButton>
               </div>
             </div>
           </div>
         </nav>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {user && (
-            <StudySession userId={user.id} onComplete={handleStudyComplete} />
-          )}
+          <StudySession
+            userId={user?.id || ''}
+            onComplete={handleCompleteStudying}
+          />
         </main>
       </div>
     );
@@ -126,111 +176,202 @@ export default function Dashboard() {
       <nav className="bg-white shadow-sm border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
-              <Link
-                href="/library"
-                className="ml-8 text-blue-600 hover:text-blue-800 font-medium text-sm"
-              >
-                Revision Library
+            <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
+            <div className="flex items-center gap-4">
+              <Link href="/library">
+                <Button variant="outline" className="text-sm">
+                  Library
+                </Button>
               </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-slate-600">
-                Welcome, {user?.email || ''}
-              </span>
-              <button
-                onClick={handleSignOut}
-                className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-sm"
-              >
-                Sign Out
-              </button>
+              {user && (
+                <span className="text-sm text-slate-600">
+                  Welcome,{' '}
+                  {user.firstName || user.emailAddresses[0]?.emailAddress}!
+                </span>
+              )}
+              <SignOutButton>
+                <button className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-sm">
+                  Sign Out
+                </button>
+              </SignOutButton>
             </div>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">Dashboard</h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Study Now Card */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-2xl">Ready to Study?</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {dueFlashcards === undefined ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-slate-600">
+                    Checking for due flashcards...
+                  </p>
+                </div>
+              ) : dueFlashcards.length > 0 ? (
+                <div className="space-y-4">
+                  <p className="text-slate-700">
+                    You have{' '}
+                    <span className="font-semibold text-blue-600">
+                      {dueFlashcards.length}
+                    </span>{' '}
+                    flashcard{dueFlashcards.length === 1 ? '' : 's'} due for
+                    review.
+                  </p>
+                  <Button
+                    onClick={handleStartStudying}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6"
+                  >
+                    Start Studying
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-slate-600 mb-4">
+                    🎉 No flashcards due for review right now!
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Come back later or add more flashcards to your library.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                Cards Progress
-              </h3>
-              <p className="text-3xl font-bold text-blue-600">
-                {stats.cardsAttempted}/{stats.totalFlashcards}
-              </p>
-              <p className="text-sm text-blue-700 mt-1">Cards studied</p>
-            </div>
+          {/* Progress Overview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {flashcards ? (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-slate-600 mb-1">
+                      Total Flashcards
+                    </p>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {flashcards.length}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-600 mb-1">
+                      Due for Review
+                    </p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {dueFlashcards?.length || 0}
+                    </p>
+                  </div>
+                  {flashcards.length > 0 && dueFlashcards && (
+                    <div>
+                      <p className="text-sm text-slate-600 mb-2">Progress</p>
+                      <Progress
+                        value={
+                          ((flashcards.length - dueFlashcards.length) /
+                            flashcards.length) *
+                          100
+                        }
+                        className="h-2"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        {Math.round(
+                          ((flashcards.length - dueFlashcards.length) /
+                            flashcards.length) *
+                            100,
+                        )}
+                        % reviewed
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-slate-600">Loading progress...</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-            <div className="bg-green-50 rounded-xl p-6 border border-green-200">
-              <h3 className="text-lg font-semibold text-green-900 mb-2">
-                Due Today
-              </h3>
-              <p className="text-3xl font-bold text-green-600">
-                {stats.dueToday}
-              </p>
-              <p className="text-sm text-green-700 mt-1">Ready for review</p>
-            </div>
+          {/* Quick Actions */}
+          <Card className="md:col-span-2 lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Link href="/library">
+                  <Button
+                    variant="outline"
+                    className="w-full h-16 text-left flex flex-col items-start justify-center"
+                  >
+                    <span className="font-medium">Browse Library</span>
+                    <span className="text-sm text-slate-500">
+                      View all flashcards
+                    </span>
+                  </Button>
+                </Link>
 
-            <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
-              <h3 className="text-lg font-semibold text-purple-900 mb-2">
-                Accuracy
-              </h3>
-              <p className="text-3xl font-bold text-purple-600">
-                {stats.accuracy}%
-              </p>
-              <p className="text-sm text-purple-700 mt-1">
-                Overall performance
-              </p>
-            </div>
+                {flashcards && flashcards.length === 0 && (
+                  <Button
+                    onClick={handleCreateSamples}
+                    variant="outline"
+                    className="w-full h-16 text-left flex flex-col items-start justify-center"
+                  >
+                    <span className="font-medium">Create Sample Cards</span>
+                    <span className="text-sm text-slate-500">
+                      Get started with examples
+                    </span>
+                  </Button>
+                )}
 
-            <div className="bg-amber-50 rounded-xl p-6 border border-amber-200">
-              <h3 className="text-lg font-semibold text-amber-900 mb-2">
-                Correct
-              </h3>
-              <p className="text-3xl font-bold text-amber-600">
-                {stats.correctAttempts}
-              </p>
-              <p className="text-sm text-amber-700 mt-1">Right answers</p>
-            </div>
-          </div>
-
-          <div className="mt-8">
-            <button
-              onClick={handleStartStudying}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={stats.dueToday === 0 && stats.totalAttempts > 0}
-            >
-              Start Studying
-            </button>
-            {stats.dueToday === 0 && stats.totalAttempts > 0 && (
-              <p className="text-slate-500 mt-2 text-sm">
-                No flashcards due for review right now.
-              </p>
-            )}
-          </div>
+                <Button
+                  variant="outline"
+                  className="w-full h-16 text-left flex flex-col items-start justify-center cursor-not-allowed opacity-50"
+                  disabled
+                >
+                  <span className="font-medium">Add Flashcards</span>
+                  <span className="text-sm text-slate-500">Coming soon</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        {/* JavaScript Library Card */}
-        <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-2xl shadow border border-yellow-200 p-8 flex flex-col md:flex-row items-center justify-between mb-8">
-          <div>
-            <h3 className="text-xl font-bold text-yellow-900 mb-2">
-              JavaScript Library
-            </h3>
-            <p className="text-yellow-800 mb-4 max-w-md">
-              Browse and revise all JavaScript Basics flashcards at your own
-              pace. No spaced repetition—just pure revision!
-            </p>
-          </div>
-          <Link
-            href="/library"
-            className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-6 rounded-xl transition-all text-lg shadow"
-          >
-            Go to Library
-          </Link>
-        </div>
+
+        {/* Debug Info */}
+        {process.env.NODE_ENV === 'development' && flashcards && (
+          <>
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="text-sm">Debug Info</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-green-600 mb-2">
+                  ✅ Convex connected! Found {flashcards.length} flashcards
+                </p>
+                <details className="text-xs text-slate-600">
+                  <summary className="cursor-pointer hover:text-slate-900">
+                    View flashcards ({flashcards.length})
+                  </summary>
+                  <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                    {flashcards.map((card) => (
+                      <div key={card._id} className="p-2 bg-slate-50 rounded">
+                        <strong>{card.question}</strong> ({card.type})
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              </CardContent>
+            </Card>
+            <UserProgressDebug userId={user?.id || ''} />
+          </>
+        )}
       </main>
     </div>
   );

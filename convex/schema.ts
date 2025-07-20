@@ -1,12 +1,8 @@
-import { authTables } from '@convex-dev/auth/server';
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
 export default defineSchema({
-  // Auth tables (required by Convex Auth)
-  ...authTables,
-
-  // Your existing tables
+  // Flashcard tables
   flashcards: defineTable({
     question: v.string(),
     answer: v.union(
@@ -24,7 +20,7 @@ export default defineSchema({
 
   // User progress - simplified SRS
   userProgress: defineTable({
-    userId: v.string(),
+    userId: v.string(), // This will be the Clerk user ID
     flashcardId: v.id('flashcards'),
     nextReviewDate: v.number(), // timestamp
     reviewCount: v.number(),

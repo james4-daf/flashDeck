@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
 import { SignOutButton, useUser } from '@clerk/nextjs';
 import { useQuery } from 'convex/react';

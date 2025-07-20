@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-up');
-  const router = useRouter();
 
   return (
     <>

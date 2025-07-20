@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { api } from '@/convex/_generated/api';
-import type { Id } from '@/convex/_generated/dataModel';
 import type { ConvexFlashcard } from '@/lib/types';
 import { useMutation, useQuery } from 'convex/react';
 import { useEffect, useState } from 'react';
@@ -54,11 +53,7 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
     }
   }, [dueFlashcards]);
 
-  const handleAnswer = async (
-    isCorrect: boolean,
-    response: Record<string, unknown>,
-    timeSpent: number,
-  ) => {
+  const handleAnswer = async (isCorrect: boolean) => {
     const currentCard = shuffledCards[currentIndex];
     if (!currentCard) return;
 
@@ -96,7 +91,7 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
           </CardHeader>
           <CardContent>
             <p className="text-slate-600 mb-4">
-              You've completed all flashcards in this session.
+              You&apos;ve completed all flashcards in this session.
             </p>
             <Button onClick={onComplete} className="w-full">
               Back to Dashboard

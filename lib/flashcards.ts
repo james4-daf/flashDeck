@@ -1,5 +1,3 @@
-import type { Id } from '@/convex/_generated/dataModel';
-
 // Spaced repetition intervals (in days) - powers of 2
 export const SRS_INTERVALS = [1, 2, 4, 8, 16];
 

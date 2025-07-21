@@ -18,11 +18,11 @@ export function FillBlankFlashcard({
   showingResult = false,
 }: FillBlankFlashcardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
-  const [answered, setAnswered] = useState(false);
+  const [, setIsCorrect] = useState<boolean | null>(null);
 
   useEffect(() => {
     setShowAnswer(false);
-    setAnswered(false);
+    setIsCorrect(null);
   }, [flashcard._id]);
 
   const handleShowAnswer = () => {
@@ -30,11 +30,9 @@ export function FillBlankFlashcard({
   };
 
   const handleAnswer = (isCorrect: boolean) => {
-    // Play sound feedback
+    setIsCorrect(isCorrect);
     playAnswerSound(isCorrect);
-
     onAnswer(isCorrect);
-    setAnswered(true);
   };
 
   const getCorrectAnswer = () => {
@@ -54,7 +52,7 @@ export function FillBlankFlashcard({
           <Button
             onClick={handleShowAnswer}
             className="w-full"
-            disabled={answered}
+            disabled={showingResult}
           >
             Show Answer
           </Button>
@@ -68,14 +66,14 @@ export function FillBlankFlashcard({
                 variant="outline"
                 onClick={() => handleAnswer(false)}
                 className="flex-1 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
-                disabled={answered}
+                disabled={showingResult}
               >
                 Incorrect
               </Button>
               <Button
                 onClick={() => handleAnswer(true)}
                 className="flex-1 bg-green-600 hover:bg-green-700"
-                disabled={answered}
+                disabled={showingResult}
               >
                 Correct
               </Button>

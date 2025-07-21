@@ -1,4 +1,5 @@
-const allFlashcards = [
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const allFlashcards = [
   {
     question: 'What are arrow functions?',
     answer:

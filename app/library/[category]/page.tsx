@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
 import { SignOutButton, useUser } from '@clerk/nextjs';
 import { useQuery } from 'convex/react';
@@ -242,10 +242,10 @@ export default function CategoryPage() {
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium text-slate-900 mb-2">
-                  No flashcards in "{categoryName}"
+                  No flashcards in &quot;{categoryName}&quot;
                 </h3>
                 <p className="text-slate-600 mb-4">
-                  This category doesn't have any flashcards yet.
+                  This category doesn&apos;t have any flashcards yet.
                 </p>
                 <Link href="/library">
                   <Button>Back to Library</Button>

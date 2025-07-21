@@ -19,13 +19,11 @@ export function CodeSnippetFlashcard({
   showingResult = false,
 }: CodeSnippetFlashcardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
-  const [pending, setPending] = useState<'correct' | 'incorrect' | null>(null);
-  const [answered, setAnswered] = useState(false);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
   useEffect(() => {
     setShowAnswer(false);
-    setPending(null);
-    setAnswered(false);
+    setIsCorrect(null);
   }, [flashcard._id]);
 
   const handleShowAnswer = () => {
@@ -33,13 +31,9 @@ export function CodeSnippetFlashcard({
   };
 
   const handleAnswer = (isCorrect: boolean) => {
-    setPending(isCorrect ? 'correct' : 'incorrect');
-
-    // Play sound feedback
+    setIsCorrect(isCorrect);
     playAnswerSound(isCorrect);
-
     onAnswer(isCorrect);
-    setAnswered(true);
   };
 
   // Extract code from question - look for code blocks marked with ``` or indented code
@@ -110,7 +104,7 @@ export function CodeSnippetFlashcard({
           <Button
             onClick={handleShowAnswer}
             className="w-full"
-            disabled={answered}
+            disabled={showingResult}
           >
             Show Answer
           </Button>
@@ -128,24 +122,24 @@ export function CodeSnippetFlashcard({
                 variant="outline"
                 onClick={() => handleAnswer(false)}
                 className={`flex-1 transition-colors ${
-                  pending === 'incorrect'
+                  isCorrect === false
                     ? 'bg-red-500 text-white border-red-500'
                     : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
                 }`}
-                disabled={pending !== null}
+                disabled={showingResult}
               >
-                {pending === 'incorrect' ? '✓ Incorrect' : 'Incorrect'}
+                {isCorrect === false ? '✓ Incorrect' : 'Incorrect'}
               </Button>
               <Button
                 onClick={() => handleAnswer(true)}
                 className={`flex-1 transition-colors ${
-                  pending === 'correct'
+                  isCorrect === true
                     ? 'bg-green-500 text-white'
                     : 'bg-green-600 hover:bg-green-700'
                 }`}
-                disabled={pending !== null}
+                disabled={showingResult}
               >
-                {pending === 'correct' ? '✓ Correct' : 'Correct'}
+                {isCorrect === true ? '✓ Correct' : 'Correct'}
               </Button>
             </div>
           </div>

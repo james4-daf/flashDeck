@@ -17,7 +17,7 @@ export function TrueFalseFlashcard({
   onAnswer,
   showingResult = false,
 }: TrueFalseFlashcardProps) {
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [, setIsCorrect] = useState<boolean | null>(null);
 
   useEffect(() => {
     setIsCorrect(null);

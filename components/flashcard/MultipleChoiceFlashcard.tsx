@@ -22,7 +22,7 @@ export function MultipleChoiceFlashcard({
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [shuffledOptions, setShuffledOptions] = useState<FlashcardOption[]>([]);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [, setIsCorrect] = useState<boolean | null>(null);
 
   // Determine if this is a multiple answer question (answer is array with multiple correct options)
   const isMultipleAnswer =

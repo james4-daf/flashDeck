@@ -18,7 +18,7 @@ export function BasicFlashcard({
   showingResult = false,
 }: BasicFlashcardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [, setIsCorrect] = useState<boolean | null>(null);
 
   useEffect(() => {
     setShowAnswer(false);

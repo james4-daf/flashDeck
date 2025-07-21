@@ -3,17 +3,20 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ConvexFlashcard } from '@/lib/types';
+import { playAnswerSound } from '@/lib/utils';
 import { Highlight, themes } from 'prism-react-renderer';
 import { useEffect, useState } from 'react';
 
 interface CodeSnippetFlashcardProps {
   flashcard: ConvexFlashcard;
   onAnswer: (isCorrect: boolean) => void;
+  showingResult?: boolean;
 }
 
 export function CodeSnippetFlashcard({
   flashcard,
   onAnswer,
+  showingResult = false,
 }: CodeSnippetFlashcardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
   const [pending, setPending] = useState<'correct' | 'incorrect' | null>(null);
@@ -31,6 +34,10 @@ export function CodeSnippetFlashcard({
 
   const handleAnswer = (isCorrect: boolean) => {
     setPending(isCorrect ? 'correct' : 'incorrect');
+
+    // Play sound feedback
+    playAnswerSound(isCorrect);
+
     onAnswer(isCorrect);
     setAnswered(true);
   };

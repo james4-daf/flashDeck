@@ -3,16 +3,19 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ConvexFlashcard } from '@/lib/types';
+import { playAnswerSound } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
 interface FillBlankFlashcardProps {
   flashcard: ConvexFlashcard;
   onAnswer: (isCorrect: boolean) => void;
+  showingResult?: boolean;
 }
 
 export function FillBlankFlashcard({
   flashcard,
   onAnswer,
+  showingResult = false,
 }: FillBlankFlashcardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
   const [answered, setAnswered] = useState(false);
@@ -27,6 +30,9 @@ export function FillBlankFlashcard({
   };
 
   const handleAnswer = (isCorrect: boolean) => {
+    // Play sound feedback
+    playAnswerSound(isCorrect);
+
     onAnswer(isCorrect);
     setAnswered(true);
   };

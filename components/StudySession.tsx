@@ -23,6 +23,8 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
     incorrect: 0,
     total: 0,
   });
+  const [answered, setAnswered] = useState(false);
+  const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
 
   // Use Convex queries and mutations
   const dueFlashcards = useQuery(api.flashcards.getDueFlashcards, { userId });
@@ -30,6 +32,7 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
 
   // Get current card's progress to show state
   const [shuffledCards, setShuffledCards] = useState<ConvexFlashcard[]>([]);
+  const [cardsLocked, setCardsLocked] = useState(false);
   const currentCard = shuffledCards[currentIndex];
   const currentProgress = useQuery(
     api.userProgress.getUserProgress,
@@ -46,19 +49,21 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
     return shuffled;
   };
 
+  const MAX_CARDS = 12;
+
   useEffect(() => {
-    if (dueFlashcards) {
+    if (dueFlashcards && !cardsLocked) {
       const filtered = dueFlashcards.filter(
         (card): card is ConvexFlashcard =>
           card !== null &&
           ['basic', 'multiple_choice', 'true_false'].includes(card.type),
       );
-
-      const shuffled = shuffleArray(filtered);
+      const shuffled = shuffleArray(filtered).slice(0, MAX_CARDS); // Limit to 12
       setShuffledCards(shuffled);
       setSessionStats((prev) => ({ ...prev, total: shuffled.length }));
+      setCardsLocked(true); // Lock the cards for this session
     }
-  }, [dueFlashcards]);
+  }, [dueFlashcards, cardsLocked]);
 
   const handleAnswer = async (isCorrect: boolean) => {
     const currentCard = shuffledCards[currentIndex];
@@ -77,14 +82,21 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
         incorrect: prev.incorrect + (isCorrect ? 0 : 1),
       }));
 
-      // Move to next card or complete session
-      if (currentIndex + 1 >= shuffledCards.length) {
-        onComplete();
-      } else {
-        setCurrentIndex((prev) => prev + 1);
-      }
+      setAnswered(true);
+      setLastCorrect(isCorrect);
+      // Do NOT move to next card yet
     } catch (error) {
       console.error('Error recording attempt:', error);
+    }
+  };
+
+  const handleNextCard = () => {
+    if (currentIndex + 1 >= shuffledCards.length) {
+      onComplete();
+    } else {
+      setCurrentIndex((prev) => prev + 1);
+      setAnswered(false);
+      setLastCorrect(null);
     }
   };
 
@@ -129,7 +141,13 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
 
     switch (flashcard.type) {
       case 'basic':
-        return <BasicFlashcard flashcard={flashcard} onAnswer={handleAnswer} />;
+        return (
+          <BasicFlashcard
+            flashcard={flashcard}
+            onAnswer={handleAnswer}
+            showingResult={answered}
+          />
+        );
       case 'multiple_choice':
         return (
           <MultipleChoiceFlashcard
@@ -147,11 +165,16 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
               })) || []
             }
             onAnswer={handleAnswer}
+            showingResult={answered}
           />
         );
       case 'true_false':
         return (
-          <TrueFalseFlashcard flashcard={flashcard} onAnswer={handleAnswer} />
+          <TrueFalseFlashcard
+            flashcard={flashcard}
+            onAnswer={handleAnswer}
+            showingResult={answered}
+          />
         );
       default:
         return null;
@@ -189,8 +212,8 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
   const displayIndex = Math.min(currentIndex + 1, shuffledCards.length);
   const progress = (displayIndex / shuffledCards.length) * 100;
   const accuracy =
-    sessionStats.total > 0
-      ? Math.round((sessionStats.correct / sessionStats.total) * 100)
+    displayIndex > 0
+      ? Math.round((sessionStats.correct / displayIndex) * 100)
       : 0;
 
   const getCardStateInfo = () => {
@@ -240,9 +263,6 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
             <h2 className="text-lg font-semibold text-slate-900">
               Study Session
             </h2>
-            <p className="text-sm text-slate-600">
-              Card {displayIndex} of {shuffledCards.length}
-            </p>
             <div className="flex items-center gap-2 mt-1">
               <span className={`text-xs font-medium ${cardStateInfo.color}`}>
                 {cardStateInfo.icon} {cardStateInfo.label}
@@ -251,10 +271,7 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
           </div>
           <div className="text-right">
             <p className="text-sm font-medium text-slate-900">
-              {accuracy}% Accuracy
-            </p>
-            <p className="text-xs text-slate-600">
-              {sessionStats.correct} correct, {sessionStats.incorrect} incorrect
+              {accuracy}% accuracy
             </p>
           </div>
         </div>
@@ -263,6 +280,24 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
 
       {/* Current Flashcard */}
       {renderFlashcard()}
+
+      {/* Feedback and Next Card Button */}
+      {answered && (
+        <div className="flex flex-col items-center mt-4">
+          <div
+            className={`inline-flex items-center px-4 py-2 rounded-lg font-medium mb-4 ${
+              lastCorrect
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}
+          >
+            {lastCorrect ? '✅ Correct!' : '❌ Incorrect'}
+          </div>
+          <Button onClick={handleNextCard} className="w-48">
+            Next Card
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,23 +3,26 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ConvexFlashcard, FlashcardOption } from '@/lib/types';
+import { playAnswerSound } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
 interface MultipleChoiceFlashcardProps {
   flashcard: ConvexFlashcard;
   options: FlashcardOption[];
   onAnswer: (isCorrect: boolean) => void;
+  showingResult?: boolean;
 }
 
 export function MultipleChoiceFlashcard({
   flashcard,
   options,
   onAnswer,
+  showingResult = false,
 }: MultipleChoiceFlashcardProps) {
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
-  const [showResult, setShowResult] = useState(false);
   const [pending, setPending] = useState(false);
   const [shuffledOptions, setShuffledOptions] = useState<FlashcardOption[]>([]);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
   // Determine if this is a multiple answer question (answer is array with multiple correct options)
   const isMultipleAnswer =
@@ -39,15 +42,15 @@ export function MultipleChoiceFlashcard({
   // Reset state when flashcard changes
   useEffect(() => {
     setSelectedAnswers([]);
-    setShowResult(false);
     setPending(false);
+    setIsCorrect(null);
     if (options.length > 0) {
       setShuffledOptions(shuffleOptions(options));
     }
   }, [flashcard._id, options]);
 
   const handleSelectAnswer = (optionId: string) => {
-    if (showResult || pending) return;
+    if (showingResult || pending) return;
 
     if (isMultipleAnswer) {
       // Multiple selection - toggle the option
@@ -73,27 +76,25 @@ export function MultipleChoiceFlashcard({
       .map((opt) => opt.id);
 
     // Check if answer is correct
-    const isCorrect = isMultipleAnswer
+    const correct = isMultipleAnswer
       ? selectedAnswers.length === correctOptionIds.length &&
         selectedAnswers.every((id) => correctOptionIds.includes(id)) &&
         correctOptionIds.every((id) => selectedAnswers.includes(id))
       : correctOptionIds.includes(selectedAnswers[0]);
 
-    setShowResult(true);
-    onAnswer(isCorrect);
-  };
+    setIsCorrect(correct);
 
-  const handleNextCard = () => {
-    setSelectedAnswers([]);
-    setShowResult(false);
-    setPending(false);
+    // Play sound feedback
+    playAnswerSound(correct);
+
+    onAnswer(correct);
   };
 
   const getOptionStyle = (optionId: string) => {
     const option = shuffledOptions.find((opt) => opt.id === optionId);
     const isSelected = selectedAnswers.includes(optionId);
 
-    if (!showResult) {
+    if (!showingResult) {
       return isSelected
         ? 'bg-blue-100 border-blue-300 text-blue-900'
         : 'bg-white border-slate-200 text-slate-900 hover:bg-slate-50';
@@ -163,7 +164,7 @@ export function MultipleChoiceFlashcard({
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="text-xl">{flashcard.question}</CardTitle>
-        {isMultipleAnswer && !showResult && (
+        {isMultipleAnswer && !showingResult && (
           <p className="text-sm text-slate-600 mt-2">
             Select all correct answers
           </p>
@@ -175,46 +176,26 @@ export function MultipleChoiceFlashcard({
             <button
               key={option.id}
               onClick={() => handleSelectAnswer(option.id)}
-              disabled={showResult || pending}
+              disabled={showingResult || pending}
               className={`w-full p-4 text-left rounded-lg border-2 transition-colors flex items-start ${getOptionStyle(
                 option.id,
               )}`}
             >
-              {!showResult && getOptionIcon(option.id)}
+              {!showingResult && getOptionIcon(option.id)}
               <div className="flex-1">
                 <span className="font-medium">{option.option_text}</span>
-                {showResult && option.is_correct && (
-                  <span className="ml-2 text-green-600">✓ Correct</span>
-                )}
-                {showResult &&
-                  selectedAnswers.includes(option.id) &&
-                  !option.is_correct && (
-                    <span className="ml-2 text-red-600">✗ Incorrect</span>
-                  )}
               </div>
             </button>
           ))}
         </div>
-
-        {!showResult ? (
+        {!showingResult && (
           <Button
             onClick={handleSubmit}
-            disabled={selectedAnswers.length === 0 || pending}
+            disabled={selectedAnswers.length === 0 || pending || showingResult}
             className="w-full"
           >
             {pending ? 'Submitting...' : 'Submit Answer'}
           </Button>
-        ) : (
-          <div className="text-center pt-4">
-            <p className="text-sm text-slate-600 mb-4">
-              {isMultipleAnswer
-                ? `Correct answers: ${shuffledOptions
-                    .filter((opt) => opt.is_correct)
-                    .map((opt) => opt.option_text)
-                    .join(', ')}`
-                : `Correct answer: ${shuffledOptions.find((opt) => opt.is_correct)?.option_text}`}
-            </p>
-          </div>
         )}
       </CardContent>
     </Card>

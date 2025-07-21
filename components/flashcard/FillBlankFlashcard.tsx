@@ -7,11 +7,7 @@ import { useEffect, useState } from 'react';
 
 interface FillBlankFlashcardProps {
   flashcard: ConvexFlashcard;
-  onAnswer: (
-    isCorrect: boolean,
-    response: Record<string, unknown>,
-    timeSpent: number,
-  ) => void;
+  onAnswer: (isCorrect: boolean) => void;
 }
 
 export function FillBlankFlashcard({
@@ -19,7 +15,6 @@ export function FillBlankFlashcard({
   onAnswer,
 }: FillBlankFlashcardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
-  const [startTime] = useState(Date.now());
   const [answered, setAnswered] = useState(false);
 
   useEffect(() => {
@@ -32,12 +27,7 @@ export function FillBlankFlashcard({
   };
 
   const handleAnswer = (isCorrect: boolean) => {
-    const timeSpent = Math.round((Date.now() - startTime) / 1000);
-    onAnswer(
-      isCorrect,
-      { userAnswer: isCorrect ? 'correct' : 'incorrect' },
-      timeSpent,
-    );
+    onAnswer(isCorrect);
     setAnswered(true);
   };
 

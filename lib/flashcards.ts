@@ -7,10 +7,11 @@ export function getNextReviewDate(
   isCorrect: boolean,
 ): Date {
   if (!isCorrect) {
-    // Reset to beginning if incorrect - review again in 1 day
-    return new Date(Date.now() + SRS_INTERVALS[0] * 24 * 60 * 60 * 1000);
+    // Give wrong answers a 10-minute delay to prevent infinite loops
+    return new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
   }
 
+  // For correct answers, use exponential backoff
   const intervalIndex = Math.min(reviewCount, SRS_INTERVALS.length - 1);
   const daysToAdd = SRS_INTERVALS[intervalIndex];
   return new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);

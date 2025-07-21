@@ -7,16 +7,11 @@ import { useEffect, useState } from 'react';
 
 interface BasicFlashcardProps {
   flashcard: ConvexFlashcard;
-  onAnswer: (
-    isCorrect: boolean,
-    response: Record<string, unknown>,
-    timeSpent: number,
-  ) => void;
+  onAnswer: (isCorrect: boolean) => void;
 }
 
 export function BasicFlashcard({ flashcard, onAnswer }: BasicFlashcardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
-  const [startTime] = useState(Date.now());
   const [pending, setPending] = useState<'correct' | 'incorrect' | null>(null);
   const [answered, setAnswered] = useState(false);
 
@@ -32,12 +27,7 @@ export function BasicFlashcard({ flashcard, onAnswer }: BasicFlashcardProps) {
 
   const handleAnswer = (isCorrect: boolean) => {
     setPending(isCorrect ? 'correct' : 'incorrect');
-    const timeSpent = Math.round((Date.now() - startTime) / 1000);
-    onAnswer(
-      isCorrect,
-      { userAnswer: isCorrect ? 'correct' : 'incorrect' },
-      timeSpent,
-    );
+    onAnswer(isCorrect);
     setAnswered(true);
   };
 

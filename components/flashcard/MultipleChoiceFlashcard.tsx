@@ -8,11 +8,7 @@ import { useEffect, useState } from 'react';
 interface MultipleChoiceFlashcardProps {
   flashcard: ConvexFlashcard;
   options: FlashcardOption[];
-  onAnswer: (
-    isCorrect: boolean,
-    response: Record<string, unknown>,
-    timeSpent: number,
-  ) => void;
+  onAnswer: (isCorrect: boolean) => void;
 }
 
 export function MultipleChoiceFlashcard({
@@ -20,11 +16,15 @@ export function MultipleChoiceFlashcard({
   options,
   onAnswer,
 }: MultipleChoiceFlashcardProps) {
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [showResult, setShowResult] = useState(false);
-  const [startTime] = useState(Date.now());
   const [pending, setPending] = useState(false);
   const [shuffledOptions, setShuffledOptions] = useState<FlashcardOption[]>([]);
+
+  // Determine if this is a multiple answer question (answer is array with multiple correct options)
+  const isMultipleAnswer =
+    Array.isArray(flashcard.answer) &&
+    shuffledOptions.filter((opt) => opt.is_correct).length > 1;
 
   // Fisher-Yates shuffle algorithm for options
   const shuffleOptions = (options: FlashcardOption[]): FlashcardOption[] => {
@@ -38,7 +38,7 @@ export function MultipleChoiceFlashcard({
 
   // Reset state when flashcard changes
   useEffect(() => {
-    setSelectedAnswer(null);
+    setSelectedAnswers([]);
     setShowResult(false);
     setPending(false);
     if (options.length > 0) {
@@ -48,33 +48,50 @@ export function MultipleChoiceFlashcard({
 
   const handleSelectAnswer = (optionId: string) => {
     if (showResult || pending) return;
-    setSelectedAnswer(optionId);
+
+    if (isMultipleAnswer) {
+      // Multiple selection - toggle the option
+      setSelectedAnswers((prev) =>
+        prev.includes(optionId)
+          ? prev.filter((id) => id !== optionId)
+          : [...prev, optionId],
+      );
+    } else {
+      // Single selection - replace the selection
+      setSelectedAnswers([optionId]);
+    }
   };
 
   const handleSubmit = () => {
-    if (!selectedAnswer || pending) return;
+    if (selectedAnswers.length === 0 || pending) return;
 
     setPending(true);
-    const selectedOption = shuffledOptions.find(
-      (opt) => opt.id === selectedAnswer,
-    );
-    const isCorrect = selectedOption?.is_correct || false;
 
-    const timeSpent = Math.round((Date.now() - startTime) / 1000);
+    // Get correct option IDs
+    const correctOptionIds = shuffledOptions
+      .filter((opt) => opt.is_correct)
+      .map((opt) => opt.id);
+
+    // Check if answer is correct
+    const isCorrect = isMultipleAnswer
+      ? selectedAnswers.length === correctOptionIds.length &&
+        selectedAnswers.every((id) => correctOptionIds.includes(id)) &&
+        correctOptionIds.every((id) => selectedAnswers.includes(id))
+      : correctOptionIds.includes(selectedAnswers[0]);
 
     setShowResult(true);
-    onAnswer(isCorrect, { selectedAnswer }, timeSpent);
+    onAnswer(isCorrect);
   };
 
   const handleNextCard = () => {
-    setSelectedAnswer(null);
+    setSelectedAnswers([]);
     setShowResult(false);
     setPending(false);
   };
 
   const getOptionStyle = (optionId: string) => {
     const option = shuffledOptions.find((opt) => opt.id === optionId);
-    const isSelected = selectedAnswer === optionId;
+    const isSelected = selectedAnswers.includes(optionId);
 
     if (!showResult) {
       return isSelected
@@ -92,6 +109,46 @@ export function MultipleChoiceFlashcard({
     }
   };
 
+  const getOptionIcon = (optionId: string) => {
+    const isSelected = selectedAnswers.includes(optionId);
+
+    if (isMultipleAnswer) {
+      // Checkbox for multiple choice
+      return (
+        <div
+          className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
+            isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+          }`}
+        >
+          {isSelected && (
+            <svg
+              className="w-3 h-3 text-white"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
+        </div>
+      );
+    } else {
+      // Radio button for single choice
+      return (
+        <div
+          className={`w-4 h-4 border-2 rounded-full mr-3 flex items-center justify-center ${
+            isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+          }`}
+        >
+          {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+        </div>
+      );
+    }
+  };
+
   if (shuffledOptions.length === 0) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
@@ -106,6 +163,11 @@ export function MultipleChoiceFlashcard({
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="text-xl">{flashcard.question}</CardTitle>
+        {isMultipleAnswer && !showResult && (
+          <p className="text-sm text-slate-600 mt-2">
+            Select all correct answers
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-3">
@@ -114,19 +176,22 @@ export function MultipleChoiceFlashcard({
               key={option.id}
               onClick={() => handleSelectAnswer(option.id)}
               disabled={showResult || pending}
-              className={`w-full p-4 text-left rounded-lg border-2 transition-colors ${getOptionStyle(
+              className={`w-full p-4 text-left rounded-lg border-2 transition-colors flex items-start ${getOptionStyle(
                 option.id,
               )}`}
             >
-              <span className="font-medium">{option.option_text}</span>
-              {showResult && option.is_correct && (
-                <span className="ml-2 text-green-600">✓</span>
-              )}
-              {showResult &&
-                selectedAnswer === option.id &&
-                !option.is_correct && (
-                  <span className="ml-2 text-red-600">✗</span>
+              {!showResult && getOptionIcon(option.id)}
+              <div className="flex-1">
+                <span className="font-medium">{option.option_text}</span>
+                {showResult && option.is_correct && (
+                  <span className="ml-2 text-green-600">✓ Correct</span>
                 )}
+                {showResult &&
+                  selectedAnswers.includes(option.id) &&
+                  !option.is_correct && (
+                    <span className="ml-2 text-red-600">✗ Incorrect</span>
+                  )}
+              </div>
             </button>
           ))}
         </div>
@@ -134,16 +199,21 @@ export function MultipleChoiceFlashcard({
         {!showResult ? (
           <Button
             onClick={handleSubmit}
-            disabled={!selectedAnswer || pending}
+            disabled={selectedAnswers.length === 0 || pending}
             className="w-full"
           >
             {pending ? 'Submitting...' : 'Submit Answer'}
           </Button>
         ) : (
-          <div className="flex justify-end">
-            <Button onClick={handleNextCard} className="w-32">
-              Next Card
-            </Button>
+          <div className="text-center pt-4">
+            <p className="text-sm text-slate-600 mb-4">
+              {isMultipleAnswer
+                ? `Correct answers: ${shuffledOptions
+                    .filter((opt) => opt.is_correct)
+                    .map((opt) => opt.option_text)
+                    .join(', ')}`
+                : `Correct answer: ${shuffledOptions.find((opt) => opt.is_correct)?.option_text}`}
+            </p>
           </div>
         )}
       </CardContent>

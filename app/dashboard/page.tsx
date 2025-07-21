@@ -35,10 +35,42 @@ function UserProgressDebug({ userId }: { userId: string }) {
     );
   }
 
+  const getStateIcon = (state: string) => {
+    switch (state) {
+      case 'new':
+        return '🆕';
+      case 'learning':
+        return '📚';
+      case 'review':
+        return '✅';
+      case 'relearning':
+        return '🔄';
+      default:
+        return '❓';
+    }
+  };
+
+  const getStateColor = (state: string) => {
+    switch (state) {
+      case 'new':
+        return 'text-blue-600';
+      case 'learning':
+        return 'text-yellow-600';
+      case 'review':
+        return 'text-green-600';
+      case 'relearning':
+        return 'text-orange-600';
+      default:
+        return 'text-slate-600';
+    }
+  };
+
   return (
     <Card className="mt-6">
       <CardHeader>
-        <CardTitle className="text-sm">User Progress Debug</CardTitle>
+        <CardTitle className="text-sm">
+          User Progress Debug (Anki-style)
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-blue-600 mb-2">
@@ -57,16 +89,38 @@ function UserProgressDebug({ userId }: { userId: string }) {
                 <div className="font-medium">
                   {progress.flashcard?.question || 'Unknown flashcard'}
                 </div>
-                <div className="text-xs mt-1">
-                  <span className="inline-block mr-2">
-                    Reviews: {progress.reviewCount}
-                  </span>
-                  <span className="inline-block mr-2">
-                    Last: {progress.lastCorrect ? '✅' : '❌'}
-                  </span>
-                  <span className="inline-block">
+                <div className="text-xs mt-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`font-medium ${getStateColor(progress.state || 'review')}`}
+                    >
+                      {getStateIcon(progress.state || 'review')}{' '}
+                      {(progress.state || 'review').toUpperCase()}
+                    </span>
+                    {(progress.state === 'learning' ||
+                      progress.state === 'relearning') &&
+                    progress.currentStep !== undefined ? (
+                      <span className="text-blue-600">
+                        Step {progress.currentStep + 1}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div>
+                    <span className="inline-block mr-2">
+                      Reviews: {progress.reviewCount}
+                    </span>
+                    <span className="inline-block mr-2">
+                      Last: {progress.lastCorrect ? '✅' : '❌'}
+                    </span>
+                    {progress.easeFactor && (
+                      <span className="inline-block mr-2">
+                        Ease: {progress.easeFactor.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-500">
                     Next: {new Date(progress.nextReviewDate).toLocaleString()}
-                  </span>
+                  </div>
                 </div>
               </div>
             ))}

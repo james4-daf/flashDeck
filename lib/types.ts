@@ -16,9 +16,14 @@ export interface ConvexUserProgress {
   _creationTime: number;
   userId: string;
   flashcardId: Id<'flashcards'>;
+
+  // Anki-style card state (optional for migration compatibility)
+  state?: 'new' | 'learning' | 'review' | 'relearning';
+  currentStep?: number;
   nextReviewDate: number;
   reviewCount: number;
   lastCorrect: boolean;
+  easeFactor?: number; // Optional ease factor (1.3-2.5)
 }
 
 // Simplified option type for flashcard components

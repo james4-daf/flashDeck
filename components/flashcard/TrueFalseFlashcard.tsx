@@ -7,18 +7,13 @@ import { useEffect, useState } from 'react';
 
 interface TrueFalseFlashcardProps {
   flashcard: ConvexFlashcard;
-  onAnswer: (
-    isCorrect: boolean,
-    response: Record<string, unknown>,
-    timeSpent: number,
-  ) => void;
+  onAnswer: (isCorrect: boolean) => void;
 }
 
 export function TrueFalseFlashcard({
   flashcard,
   onAnswer,
 }: TrueFalseFlashcardProps) {
-  const [startTime] = useState(Date.now());
   const [answered, setAnswered] = useState(false);
 
   useEffect(() => {
@@ -28,14 +23,13 @@ export function TrueFalseFlashcard({
   const handleAnswer = (userAnswer: boolean) => {
     if (answered) return;
 
-    const timeSpent = Math.round((Date.now() - startTime) / 1000);
     const correctAnswer =
       typeof flashcard.answer === 'string'
         ? flashcard.answer.toLowerCase() === 'true'
         : Boolean(flashcard.answer);
     const isCorrect = userAnswer === correctAnswer;
 
-    onAnswer(isCorrect, { userAnswer }, timeSpent);
+    onAnswer(isCorrect);
     setAnswered(true);
   };
 

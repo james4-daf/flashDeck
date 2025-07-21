@@ -28,6 +28,14 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
   const dueFlashcards = useQuery(api.flashcards.getDueFlashcards, { userId });
   const recordAttempt = useMutation(api.userProgress.recordAttempt);
 
+  // Get current card's progress to show state
+  const [shuffledCards, setShuffledCards] = useState<ConvexFlashcard[]>([]);
+  const currentCard = shuffledCards[currentIndex];
+  const currentProgress = useQuery(
+    api.userProgress.getUserProgress,
+    currentCard ? { userId, flashcardId: currentCard._id } : 'skip',
+  );
+
   // Fisher-Yates shuffle algorithm
   const shuffleArray = <T,>(array: T[]): T[] => {
     const shuffled = [...array];
@@ -38,8 +46,6 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
     return shuffled;
   };
 
-  const [shuffledCards, setShuffledCards] = useState<ConvexFlashcard[]>([]);
-
   useEffect(() => {
     if (dueFlashcards) {
       const filtered = dueFlashcards.filter(
@@ -47,6 +53,7 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
           card !== null &&
           ['basic', 'multiple_choice', 'true_false'].includes(card.type),
       );
+
       const shuffled = shuffleArray(filtered);
       setShuffledCards(shuffled);
       setSessionStats((prev) => ({ ...prev, total: shuffled.length }));
@@ -186,6 +193,44 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
       ? Math.round((sessionStats.correct / sessionStats.total) * 100)
       : 0;
 
+  const getCardStateInfo = () => {
+    if (!currentProgress) {
+      return { label: 'New', color: 'text-blue-600', icon: '🆕' };
+    }
+
+    // Handle migration - existing records might not have state field
+    const state = currentProgress.state || 'review';
+    const currentStep = currentProgress.currentStep ?? 0;
+    const reviewCount = currentProgress.reviewCount || 0;
+
+    switch (state) {
+      case 'new':
+        return { label: 'New', color: 'text-blue-600', icon: '🆕' };
+      case 'learning':
+        return {
+          label: `Learning (Step ${currentStep + 1})`,
+          color: 'text-yellow-600',
+          icon: '📚',
+        };
+      case 'review':
+        return {
+          label: `Review (${reviewCount} times)`,
+          color: 'text-green-600',
+          icon: '✅',
+        };
+      case 'relearning':
+        return {
+          label: `Relearning (Step ${currentStep + 1})`,
+          color: 'text-orange-600',
+          icon: '🔄',
+        };
+      default:
+        return { label: 'Unknown', color: 'text-slate-600', icon: '❓' };
+    }
+  };
+
+  const cardStateInfo = getCardStateInfo();
+
   return (
     <div className="space-y-6">
       {/* Progress Header */}
@@ -198,6 +243,11 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
             <p className="text-sm text-slate-600">
               Card {displayIndex} of {shuffledCards.length}
             </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`text-xs font-medium ${cardStateInfo.color}`}>
+                {cardStateInfo.icon} {cardStateInfo.label}
+              </span>
+            </div>
           </div>
           <div className="text-right">
             <p className="text-sm font-medium text-slate-900">

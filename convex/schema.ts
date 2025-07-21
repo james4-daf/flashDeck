@@ -18,15 +18,32 @@ export default defineSchema({
     options: v.optional(v.array(v.string())), // for multiple choice options
   }),
 
-  // User progress - simplified SRS
+  // User progress - Anki-style SRS
   userProgress: defineTable({
     userId: v.string(), // This will be the Clerk user ID
     flashcardId: v.id('flashcards'),
+
+    // Anki-style card state (optional for migration compatibility)
+    state: v.optional(
+      v.union(
+        v.literal('new'), // Never studied
+        v.literal('learning'), // In learning phase (1min → 10min)
+        v.literal('review'), // Graduated to review phase
+        v.literal('relearning'), // Failed review, back to learning
+      ),
+    ),
+
+    // Learning progress (optional for migration compatibility)
+    currentStep: v.optional(v.number()), // Current step in learning/relearning sequence
     nextReviewDate: v.number(), // timestamp
-    reviewCount: v.number(),
+    reviewCount: v.number(), // How many times successfully reviewed
     lastCorrect: v.boolean(),
+
+    // Anki-style ease factor (optional for future enhancement)
+    easeFactor: v.optional(v.number()), // 1.3 to 2.5, default 2.5
   })
     .index('by_user', ['userId'])
     .index('by_user_and_card', ['userId', 'flashcardId'])
-    .index('by_due_date', ['nextReviewDate']),
+    .index('by_due_date', ['nextReviewDate'])
+    .index('by_state', ['state']),
 });

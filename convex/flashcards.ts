@@ -6,9 +6,7 @@ import { mutation, query } from './_generated/server';
 export const getAllFlashcards = query({
   args: {},
   handler: async (ctx) => {
-    console.log('🔐 getAllFlashcards: Query called');
     const cards = await ctx.db.query('flashcards').collect();
-    console.log('🔐 getAllFlashcards: Found', cards.length, 'flashcards');
     return cards;
   },
 });
@@ -58,19 +56,6 @@ export const getDueFlashcards = query({
       return progress.nextReviewDate <= now;
     });
 
-    console.log(
-      '🔐 getDueFlashcards: Found',
-      dueFlashcards.length,
-      'due flashcards for user',
-      args.userId,
-    );
-    console.log(
-      '🔐 getDueFlashcards: Total flashcards:',
-      allFlashcards.length,
-      'User progress records:',
-      userProgress.length,
-    );
-
     return dueFlashcards;
   },
 });
@@ -89,7 +74,6 @@ export const createFlashcard = mutation({
     options: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    console.log('🔐 createFlashcard: Creating flashcard:', args.question);
     return await ctx.db.insert('flashcards', {
       question: args.question,
       answer: args.answer,
@@ -104,12 +88,9 @@ export const createFlashcard = mutation({
 export const createSampleFlashcards = mutation({
   args: {},
   handler: async (ctx) => {
-    console.log('🔐 createSampleFlashcards: Creating sample flashcards...');
-
     // Check if we already have flashcards
     const existing = await ctx.db.query('flashcards').collect();
     if (existing.length > 0) {
-      console.log('🔐 createSampleFlashcards: Sample flashcards already exist');
       return {
         message: 'Sample flashcards already exist',
         count: existing.length,
@@ -138,6 +119,13 @@ export const createSampleFlashcards = mutation({
         options: ['push()', 'pop()', 'shift()', 'unshift()'],
       },
       {
+        question: 'Which of the following are JavaScript primitive types?',
+        answer: ['string', 'number', 'boolean'],
+        type: 'multiple_choice' as const,
+        category: 'Types',
+        options: ['string', 'number', 'boolean', 'array', 'object'],
+      },
+      {
         question: 'Is JavaScript a compiled language?',
         answer: 'false',
         type: 'true_false' as const,
@@ -149,14 +137,8 @@ export const createSampleFlashcards = mutation({
     for (const card of sampleCards) {
       const id = await ctx.db.insert('flashcards', card);
       createdCards.push(id);
-      console.log('🔐 createSampleFlashcards: Created card:', card.question);
     }
 
-    console.log(
-      '🔐 createSampleFlashcards: Created',
-      createdCards.length,
-      'sample flashcards',
-    );
     return { message: 'Sample flashcards created', count: createdCards.length };
   },
 });

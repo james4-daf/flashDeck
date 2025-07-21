@@ -25,6 +25,10 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
   });
   const [answered, setAnswered] = useState(false);
   const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
+  const [answerHistory, setAnswerHistory] = useState<
+    { card: ConvexFlashcard; isCorrect: boolean }[]
+  >([]);
+  const [showSummary, setShowSummary] = useState(false);
 
   // Use Convex queries and mutations
   const dueFlashcards = useQuery(api.flashcards.getDueFlashcards, { userId });
@@ -82,6 +86,8 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
         incorrect: prev.incorrect + (isCorrect ? 0 : 1),
       }));
 
+      setAnswerHistory((prev) => [...prev, { card: currentCard, isCorrect }]);
+
       setAnswered(true);
       setLastCorrect(isCorrect);
       // Do NOT move to next card yet
@@ -92,7 +98,7 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
 
   const handleNextCard = () => {
     if (currentIndex + 1 >= shuffledCards.length) {
-      onComplete();
+      setShowSummary(true); // Show summary instead of going to dashboard
     } else {
       setCurrentIndex((prev) => prev + 1);
       setAnswered(false);
@@ -203,6 +209,53 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
             You don&apos;t have any flashcards due for review right now.
           </p>
           <Button onClick={onComplete}>Back to Dashboard</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (showSummary) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto mt-8">
+        <CardHeader>
+          <CardTitle>Session Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4">
+            <p className="font-semibold text-green-700 mb-2">
+              Correct Answers:
+            </p>
+            <ul className="mb-4 list-disc list-inside">
+              {answerHistory.filter((a) => a.isCorrect).length === 0 && (
+                <li className="text-slate-500">None</li>
+              )}
+              {answerHistory
+                .filter((a) => a.isCorrect)
+                .map((a, i) => (
+                  <li key={i} className="text-green-800">
+                    {a.card.question}
+                  </li>
+                ))}
+            </ul>
+            <p className="font-semibold text-red-700 mb-2">
+              Incorrect Answers:
+            </p>
+            <ul className="mb-4 list-disc list-inside">
+              {answerHistory.filter((a) => !a.isCorrect).length === 0 && (
+                <li className="text-slate-500">None</li>
+              )}
+              {answerHistory
+                .filter((a) => !a.isCorrect)
+                .map((a, i) => (
+                  <li key={i} className="text-red-800">
+                    {a.card.question}
+                  </li>
+                ))}
+            </ul>
+          </div>
+          <Button onClick={onComplete} className="w-full">
+            Back to Dashboard
+          </Button>
         </CardContent>
       </Card>
     );

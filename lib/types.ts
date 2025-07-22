@@ -8,6 +8,7 @@ export interface ConvexFlashcard {
   answer: string | string[];
   type: 'basic' | 'multiple_choice' | 'true_false';
   category: string;
+  tech: string;
   options?: string[];
 }
 

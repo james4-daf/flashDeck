@@ -72,6 +72,7 @@ export const createFlashcard = mutation({
     ),
     category: v.string(),
     options: v.optional(v.array(v.string())),
+    tech: v.string(),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert('flashcards', {
@@ -80,6 +81,7 @@ export const createFlashcard = mutation({
       type: args.type,
       category: args.category,
       options: args.options,
+      tech: args.tech,
     });
   },
 });
@@ -103,12 +105,16 @@ export const createSampleFlashcards = mutation({
         answer: 'let has block scope while var has function scope',
         type: 'basic' as const,
         category: 'Variables',
+        tech: 'JavaScript',
+        lists: ['top100'],
       },
       {
         question: 'What is the purpose of the useState hook in React?',
         answer: 'To add state to functional components',
         type: 'basic' as const,
         category: 'React Hooks',
+        tech: 'React',
+        lists: ['top100'],
       },
       {
         question:
@@ -117,6 +123,8 @@ export const createSampleFlashcards = mutation({
         type: 'multiple_choice' as const,
         category: 'Arrays',
         options: ['push()', 'pop()', 'shift()', 'unshift()'],
+        tech: 'JavaScript',
+        lists: ['top100'],
       },
       {
         question: 'Which of the following are JavaScript primitive types?',
@@ -124,12 +132,16 @@ export const createSampleFlashcards = mutation({
         type: 'multiple_choice' as const,
         category: 'Types',
         options: ['string', 'number', 'boolean', 'array', 'object'],
+        tech: 'JavaScript',
+        lists: ['top100'],
       },
       {
         question: 'Is JavaScript a compiled language?',
         answer: 'false',
         type: 'true_false' as const,
         category: 'JavaScript Basics',
+        tech: 'JavaScript',
+        lists: ['essential50'],
       },
     ];
 
@@ -140,5 +152,29 @@ export const createSampleFlashcards = mutation({
     }
 
     return { message: 'Sample flashcards created', count: createdCards.length };
+  },
+});
+
+export const addTechToExistingFlashcards = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query('flashcards').collect();
+    let updated = 0;
+    for (const card of all) {
+      if (!card.tech) {
+        // You can set a default value, e.g., "JavaScript"
+        await ctx.db.patch(card._id, { tech: 'JavaScript' });
+        updated++;
+      }
+    }
+    return { updated };
+  },
+});
+
+export const getFlashcardsByList = query({
+  args: { list: v.string() },
+  handler: async (ctx, args) => {
+    const all = await ctx.db.query('flashcards').collect();
+    return all.filter((card) => card.lists?.includes(args.list));
   },
 });

@@ -14,6 +14,8 @@ export default defineSchema({
       v.literal('multiple_choice'),
       v.literal('true_false'),
     ),
+    tech: v.optional(v.string()),
+    lists: v.optional(v.array(v.string())),
     category: v.string(), // just a string, not separate table
     options: v.optional(v.array(v.string())), // for multiple choice options
   }),

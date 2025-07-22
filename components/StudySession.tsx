@@ -262,11 +262,11 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
   }
 
   // Handle out-of-bounds index for progress display
-  const displayIndex = Math.min(currentIndex + 1, shuffledCards.length);
-  const progress = (displayIndex / shuffledCards.length) * 100;
+  const answeredCount = answerHistory.length;
+  const progress = (answeredCount / shuffledCards.length) * 100;
   const accuracy =
-    displayIndex > 0
-      ? Math.round((sessionStats.correct / displayIndex) * 100)
+    answeredCount > 0
+      ? Math.round((sessionStats.correct / answeredCount) * 100)
       : 0;
 
   const getCardStateInfo = () => {

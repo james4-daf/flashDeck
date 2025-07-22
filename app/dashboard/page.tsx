@@ -166,9 +166,16 @@ function DashboardContent() {
   const [isStudying, setIsStudying] = useState(false);
 
   const flashcards = useQuery(api.flashcards.getAllFlashcards);
-  const dueFlashcards = useQuery(api.flashcards.getDueFlashcards, {
+  // Extract unique lists from all flashcards
+  const allLists = Array.from(
+    new Set((flashcards ?? []).flatMap((card) => card.lists ?? [])),
+  );
+
+  // Fetch all user progress for accurate dashboard stats
+  const userProgress = useQuery(api.userProgress.getAllUserProgress, {
     userId: user?.id || '',
   });
+
   const createSampleFlashcards = useMutation(
     api.flashcards.createSampleFlashcards,
   );
@@ -225,6 +232,24 @@ function DashboardContent() {
     );
   }
 
+  const total = flashcards?.length || 0;
+  // Map user progress by flashcardId for quick lookup
+  const progressMap = new Map(
+    userProgress?.map((p) => [p.flashcardId, p]) ?? [],
+  );
+  // Completed: reviewed at least once and not due
+  const completed = flashcards
+    ? flashcards.filter((card) => {
+        const progress = progressMap.get(card._id);
+        return (
+          progress &&
+          progress.reviewCount > 0 &&
+          progress.nextReviewDate > Date.now()
+        );
+      }).length
+    : 0;
+  const due = total - completed;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <nav className="bg-white shadow-sm border-b border-slate-200">
@@ -261,22 +286,19 @@ function DashboardContent() {
               <CardTitle className="text-2xl">Ready to Study?</CardTitle>
             </CardHeader>
             <CardContent>
-              {dueFlashcards === undefined ? (
+              {flashcards === undefined ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
                   <p className="text-slate-600">
                     Checking for due flashcards...
                   </p>
                 </div>
-              ) : dueFlashcards.length > 0 ? (
+              ) : flashcards.length > 0 ? (
                 <div className="space-y-4">
                   <p className="text-slate-700">
                     You have{' '}
-                    <span className="font-semibold text-blue-600">
-                      {dueFlashcards.length}
-                    </span>{' '}
-                    flashcard{dueFlashcards.length === 1 ? '' : 's'} due for
-                    review.
+                    <span className="font-semibold text-blue-600">{due}</span>{' '}
+                    flashcard{due === 1 ? '' : 's'} due for review.
                   </p>
                   <Button
                     onClick={handleStartStudying}
@@ -310,36 +332,23 @@ function DashboardContent() {
                     <p className="text-sm text-slate-600 mb-1">
                       Total Flashcards
                     </p>
-                    <p className="text-2xl font-bold text-slate-900">
-                      {flashcards.length}
-                    </p>
+                    <p className="text-2xl font-bold text-slate-900">{total}</p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-600 mb-1">
                       Due for Review
                     </p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {dueFlashcards?.length || 0}
-                    </p>
+                    <p className="text-2xl font-bold text-blue-600">{due}</p>
                   </div>
-                  {flashcards.length > 0 && dueFlashcards && (
+                  {total > 0 && (
                     <div>
                       <p className="text-sm text-slate-600 mb-2">Progress</p>
                       <Progress
-                        value={
-                          ((flashcards.length - dueFlashcards.length) /
-                            flashcards.length) *
-                          100
-                        }
+                        value={((total - due) / total) * 100}
                         className="h-2"
                       />
                       <p className="text-xs text-slate-500 mt-1">
-                        {Math.round(
-                          ((flashcards.length - dueFlashcards.length) /
-                            flashcards.length) *
-                            100,
-                        )}
-                        % reviewed
+                        {Math.round(((total - due) / total) * 100)}% reviewed
                       </p>
                     </div>
                   )}
@@ -396,6 +405,26 @@ function DashboardContent() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Study by List */}
+          {allLists.length > 0 && (
+            <Card className="md:col-span-2 lg:col-span-3">
+              <CardHeader>
+                <CardTitle>Study by List</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-4">
+                  {allLists.map((list) => (
+                    <Link key={list} href={`/library/list/${list}`}>
+                      <Button variant="outline" className="capitalize">
+                        {list.replace(/([a-z])([0-9])/g, '$1 $2')}
+                      </Button>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Debug Info */}

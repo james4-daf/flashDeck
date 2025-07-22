@@ -51,9 +51,6 @@ export function StudySession({
     api.flashcards.getFlashcardsByListForStudying,
     listQueryArgs,
   );
-  const userProgress = useQuery(api.userProgress.getAllUserProgress, {
-    userId,
-  });
   const recordAttempt = useMutation(api.userProgress.recordAttempt);
   const markImportant = useMutation(api.userProgress.markImportant);
 
@@ -125,14 +122,6 @@ export function StudySession({
           options: item.options,
           lists: item.lists,
         }));
-
-        // Essential debug for list mode
-        console.log('LIST DEBUG:', {
-          listName,
-          listFlashcardsLength: listFlashcards.length,
-          processedLength: flashcards.length,
-          cardsLocked,
-        });
       } else {
         // Still loading, don't process yet
         flashcards = undefined;
@@ -153,15 +142,11 @@ export function StudySession({
         setShuffledCards(shuffled);
         setSessionStats((prev) => ({ ...prev, total: shuffled.length }));
         setCardsLocked(true); // Lock the cards for this session
-
-        console.log('CARDS PROCESSED:', shuffled.length, 'cards ready');
       } else {
         // No flashcards found, but still lock the session to show empty state
         setShuffledCards([]);
         setSessionStats((prev) => ({ ...prev, total: 0 }));
         setCardsLocked(true);
-
-        console.log('NO CARDS FOUND for mode:', studyMode);
       }
     }
   }, [dueFlashcards, importantFlashcards, listFlashcards, studyMode, listName]);
@@ -348,15 +333,6 @@ export function StudySession({
     if (studyMode === 'list') {
       title = 'No cards in this list';
       message = `No flashcards found in the "${listName?.replace(/([a-z])([0-9])/g, '$1 $2')}" list that are due for review.`;
-
-      // Add debugging info for list mode
-      console.log(
-        'EMPTY STATE - List mode:',
-        listName,
-        'has',
-        listFlashcards?.length,
-        'cards from query',
-      );
     } else if (studyMode === 'important') {
       title = 'No important cards';
       message = "You haven't marked any flashcards as important yet.";

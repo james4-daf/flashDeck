@@ -2,9 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { api } from '@/convex/_generated/api';
 import { SignOutButton, useUser } from '@clerk/nextjs';
-import { useQuery } from 'convex/react';
 import Link from 'next/link';
 
 const TECHS = [
@@ -15,7 +13,6 @@ const TECHS = [
 
 export default function LibraryPage() {
   const { user } = useUser();
-  // No need to fetch all flashcards here
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">

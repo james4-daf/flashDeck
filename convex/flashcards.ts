@@ -60,6 +60,37 @@ export const getDueFlashcards = query({
   },
 });
 
+// Get important flashcards for a specific user (regardless of due status)
+export const getImportantFlashcards = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    // Get all flashcards
+    const allFlashcards = await ctx.db.query('flashcards').collect();
+
+    // Get user's progress for all flashcards
+    const userProgress = await ctx.db
+      .query('userProgress')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    // Create a map of flashcard progress for quick lookup
+    const progressMap = new Map();
+    userProgress.forEach((progress) => {
+      progressMap.set(progress.flashcardId, progress);
+    });
+
+    // Filter flashcards that are marked as important
+    const importantFlashcards = allFlashcards.filter((flashcard) => {
+      const progress = progressMap.get(flashcard._id);
+
+      // Include cards that are marked as important
+      return progress && progress.important;
+    });
+
+    return importantFlashcards;
+  },
+});
+
 // Create a flashcard (for adding test data)
 export const createFlashcard = mutation({
   args: {

@@ -14,9 +14,14 @@ import { TrueFalseFlashcard } from './flashcard/TrueFalseFlashcard';
 interface StudySessionProps {
   userId: string;
   onComplete: () => void;
+  studyMode?: 'normal' | 'important';
 }
 
-export function StudySession({ userId, onComplete }: StudySessionProps) {
+export function StudySession({
+  userId,
+  onComplete,
+  studyMode = 'normal',
+}: StudySessionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sessionStats, setSessionStats] = useState({
     correct: 0,
@@ -32,7 +37,14 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
 
   // Use Convex queries and mutations
   const dueFlashcards = useQuery(api.flashcards.getDueFlashcards, { userId });
+  const importantFlashcards = useQuery(api.flashcards.getImportantFlashcards, {
+    userId,
+  });
+  const userProgress = useQuery(api.userProgress.getAllUserProgress, {
+    userId,
+  });
   const recordAttempt = useMutation(api.userProgress.recordAttempt);
+  const markImportant = useMutation(api.userProgress.markImportant);
 
   // Get current card's progress to show state
   const [shuffledCards, setShuffledCards] = useState<ConvexFlashcard[]>([]);
@@ -56,18 +68,23 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
   const MAX_CARDS = 12;
 
   useEffect(() => {
-    if (dueFlashcards && !cardsLocked) {
-      const filtered = dueFlashcards.filter(
+    // Choose the appropriate flashcards based on study mode
+    const flashcards =
+      studyMode === 'important' ? importantFlashcards : dueFlashcards;
+
+    if (flashcards && !cardsLocked) {
+      const filtered = flashcards.filter(
         (card): card is ConvexFlashcard =>
           card !== null &&
           ['basic', 'multiple_choice', 'true_false'].includes(card.type),
       );
+
       const shuffled = shuffleArray(filtered).slice(0, MAX_CARDS); // Limit to 12
       setShuffledCards(shuffled);
       setSessionStats((prev) => ({ ...prev, total: shuffled.length }));
       setCardsLocked(true); // Lock the cards for this session
     }
-  }, [dueFlashcards, cardsLocked]);
+  }, [dueFlashcards, importantFlashcards, cardsLocked, studyMode]);
 
   const handleAnswer = async (isCorrect: boolean) => {
     const currentCard = shuffledCards[currentIndex];
@@ -93,6 +110,21 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
       // Do NOT move to next card yet
     } catch (error) {
       console.error('Error recording attempt:', error);
+    }
+  };
+
+  const handleMarkImportant = async (important: boolean) => {
+    const currentCard = shuffledCards[currentIndex];
+    if (!currentCard) return;
+
+    try {
+      await markImportant({
+        userId,
+        flashcardId: currentCard._id,
+        important,
+      });
+    } catch (error) {
+      console.error('Error marking as important:', error);
     }
   };
 
@@ -145,6 +177,9 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
       );
     }
 
+    // Determine if we should show the important button
+    const shouldShowImportantButton = answered;
+
     switch (flashcard.type) {
       case 'basic':
         return (
@@ -152,6 +187,9 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
             flashcard={flashcard}
             onAnswer={handleAnswer}
             showingResult={answered}
+            onMarkImportant={handleMarkImportant}
+            showImportantButton={shouldShowImportantButton}
+            isImportant={!!currentProgress?.important}
           />
         );
       case 'multiple_choice':
@@ -167,7 +205,7 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
                   ? flashcard.answer.includes(option)
                   : flashcard.answer === option,
                 order_index: index,
-                created_at: '',
+                created_at: new Date().toISOString(),
               })) || []
             }
             onAnswer={handleAnswer}
@@ -183,11 +221,29 @@ export function StudySession({ userId, onComplete }: StudySessionProps) {
           />
         );
       default:
-        return null;
+        return (
+          <Card className="w-full max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle>Unsupported Flashcard Type</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-600 mb-4">
+                This flashcard type is not yet supported.
+              </p>
+              <Button onClick={handleNextCard} className="w-full">
+                Skip Card
+              </Button>
+            </CardContent>
+          </Card>
+        );
     }
   };
 
-  if (dueFlashcards === undefined) {
+  if (
+    studyMode === 'important'
+      ? importantFlashcards === undefined
+      : dueFlashcards === undefined
+  ) {
     return (
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">

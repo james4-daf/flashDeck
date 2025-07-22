@@ -164,6 +164,7 @@ function RedirectToLogin() {
 function DashboardContent() {
   const { user } = useUser();
   const [isStudying, setIsStudying] = useState(false);
+  const [studyMode, setStudyMode] = useState<'normal' | 'important'>('normal');
 
   const flashcards = useQuery(api.flashcards.getAllFlashcards);
   // Extract unique lists from all flashcards
@@ -173,6 +174,11 @@ function DashboardContent() {
 
   // Fetch all user progress for accurate dashboard stats
   const userProgress = useQuery(api.userProgress.getAllUserProgress, {
+    userId: user?.id || '',
+  });
+
+  // Fetch study counts for gamification
+  const studyCounts = useQuery(api.userProgress.getStudyCounts, {
     userId: user?.id || '',
   });
 
@@ -189,12 +195,14 @@ function DashboardContent() {
     }
   };
 
-  const handleStartStudying = () => {
+  const handleStartStudying = (mode: 'normal' | 'important' = 'normal') => {
+    setStudyMode(mode);
     setIsStudying(true);
   };
 
   const handleCompleteStudying = () => {
     setIsStudying(false);
+    setStudyMode('normal');
   };
 
   if (isStudying) {
@@ -205,6 +213,11 @@ function DashboardContent() {
             <div className="flex justify-between items-center h-16">
               <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
               <div className="flex items-center gap-4">
+                <span className="text-sm text-slate-600">
+                  {studyMode === 'important'
+                    ? '📌 Studying Important Cards'
+                    : '📚 Studying All Cards'}
+                </span>
                 <Button
                   variant="outline"
                   onClick={handleCompleteStudying}
@@ -226,6 +239,7 @@ function DashboardContent() {
           <StudySession
             userId={user?.id || ''}
             onComplete={handleCompleteStudying}
+            studyMode={studyMode}
           />
         </main>
       </div>
@@ -249,6 +263,10 @@ function DashboardContent() {
       }).length
     : 0;
   const due = total - completed;
+
+  // Count important cards
+  const importantCards = userProgress?.filter((p) => p.important) || [];
+  const importantCount = importantCards.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -279,7 +297,10 @@ function DashboardContent() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Main dashboard cards in a flex row */}
+
+        {/* Rest of dashboard (Progress, Study Now, etc.) */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 my-6">
           {/* Study Now Card */}
           <Card className="md:col-span-2">
             <CardHeader>
@@ -300,12 +321,34 @@ function DashboardContent() {
                     <span className="font-semibold text-blue-600">{due}</span>{' '}
                     flashcard{due === 1 ? '' : 's'} due for review.
                   </p>
-                  <Button
-                    onClick={handleStartStudying}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6"
-                  >
-                    Start Studying
-                  </Button>
+
+                  {/* Study buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      onClick={() => handleStartStudying('normal')}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-lg py-6"
+                    >
+                      Start Studying
+                    </Button>
+
+                    {importantCount > 0 && (
+                      <Button
+                        onClick={() => handleStartStudying('important')}
+                        variant="outline"
+                        className="flex-1 text-lg py-6 border-orange-300 text-orange-700 hover:bg-orange-50"
+                      >
+                        📌 Study Important ({importantCount})
+                      </Button>
+                    )}
+                  </div>
+
+                  {importantCount > 0 && (
+                    <p className="text-sm text-slate-600">
+                      You have {importantCount} important card
+                      {importantCount === 1 ? '' : 's'} marked for focused
+                      study.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -340,6 +383,16 @@ function DashboardContent() {
                     </p>
                     <p className="text-2xl font-bold text-blue-600">{due}</p>
                   </div>
+                  {importantCount > 0 && (
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">
+                        Important Cards
+                      </p>
+                      <p className="text-2xl font-bold text-orange-600">
+                        {importantCount}
+                      </p>
+                    </div>
+                  )}
                   {total > 0 && (
                     <div>
                       <p className="text-sm text-slate-600 mb-2">Progress</p>
@@ -361,14 +414,80 @@ function DashboardContent() {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        <div className="flex flex-col gap-4 md:flex-row md:gap-6">
+          {/* Study Activity */}
+          <Card className="flex-1 min-w-[220px]">
+            <CardHeader>
+              <CardTitle>Study Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {studyCounts ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {studyCounts.daily}
+                    </div>
+                    <div className="text-sm text-slate-500">Today</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {studyCounts.weekly}
+                    </div>
+                    <div className="text-sm text-slate-500">This Week</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {studyCounts.monthly}
+                    </div>
+                    <div className="text-sm text-slate-500">This Month</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-slate-600">
+                      {studyCounts.total}
+                    </div>
+                    <div className="text-sm text-slate-500">Total</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-slate-600">Loading activity...</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Study by List */}
+          <Card className="flex-1 min-w-[220px]">
+            <CardHeader>
+              <CardTitle>Study by List</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                {allLists.length > 0 ? (
+                  allLists.map((list) => (
+                    <Link key={list} href={`/library/list/${list}`}>
+                      <Button variant="outline" className="capitalize">
+                        {list.replace(/([a-z])([0-9])/g, '$1 $2')}
+                      </Button>
+                    </Link>
+                  ))
+                ) : (
+                  <span className="text-slate-500 text-sm">No lists found</span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Quick Actions */}
-          <Card className="md:col-span-2 lg:col-span-3">
+          <Card className="flex-1 min-w-[220px]">
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4">
                 <Link href="/library">
                   <Button
                     variant="outline"
@@ -405,29 +524,9 @@ function DashboardContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Study by List */}
-          {allLists.length > 0 && (
-            <Card className="md:col-span-2 lg:col-span-3">
-              <CardHeader>
-                <CardTitle>Study by List</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-4">
-                  {allLists.map((list) => (
-                    <Link key={list} href={`/library/list/${list}`}>
-                      <Button variant="outline" className="capitalize">
-                        {list.replace(/([a-z])([0-9])/g, '$1 $2')}
-                      </Button>
-                    </Link>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
-        {/* Debug Info */}
+        {/* Debug Info, etc. ... */}
         {process.env.NODE_ENV === 'development' && flashcards && (
           <>
             <Card className="mt-6">

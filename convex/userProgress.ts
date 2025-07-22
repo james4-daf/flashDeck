@@ -2,6 +2,11 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 
+// Helper function to get date string in YYYY-MM-DD format
+function getDateString(timestamp: number): string {
+  return new Date(timestamp).toISOString().split('T')[0];
+}
+
 // Anki-style learning configuration
 const LEARNING_STEPS = [10, 60]; // 10min → 1hr → graduate to review
 const RELEARNING_STEPS = [10]; // Failed cards: 10min → back to review
@@ -43,6 +48,29 @@ export const recordAttempt = mutation({
       .first();
 
     const now = Date.now();
+    const today = getDateString(now);
+
+    // Update study log for today
+    const existingLog = await ctx.db
+      .query('studyLog')
+      .withIndex('by_user_and_date', (q) =>
+        q.eq('userId', args.userId).eq('date', today),
+      )
+      .first();
+
+    if (existingLog) {
+      // Increment existing count
+      await ctx.db.patch(existingLog._id, {
+        flashcardCount: existingLog.flashcardCount + 1,
+      });
+    } else {
+      // Create new log for today
+      await ctx.db.insert('studyLog', {
+        userId: args.userId,
+        date: today,
+        flashcardCount: 1,
+      });
+    }
 
     if (existing) {
       // Migrate existing records that don't have Anki-style fields
@@ -229,5 +257,68 @@ export const getAllUserProgress = query({
     );
 
     return progressWithFlashcards;
+  },
+});
+
+// Get study counts for daily, weekly, monthly tracking
+export const getStudyCounts = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const now = new Date();
+    const today = getDateString(now.getTime());
+
+    // Calculate date ranges
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
+    const startOfWeekStr = getDateString(startOfWeek.getTime());
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfMonthStr = getDateString(startOfMonth.getTime());
+
+    // Get all study logs for this user
+    const studyLogs = await ctx.db
+      .query('studyLog')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    // Calculate counts
+    const daily =
+      studyLogs.find((log) => log.date === today)?.flashcardCount || 0;
+
+    const weekly = studyLogs
+      .filter((log) => log.date >= startOfWeekStr)
+      .reduce((sum, log) => sum + log.flashcardCount, 0);
+
+    const monthly = studyLogs
+      .filter((log) => log.date >= startOfMonthStr)
+      .reduce((sum, log) => sum + log.flashcardCount, 0);
+
+    const total = studyLogs.reduce((sum, log) => sum + log.flashcardCount, 0);
+
+    return {
+      daily,
+      weekly,
+      monthly,
+      total,
+    };
+  },
+});
+
+export const markImportant = mutation({
+  args: {
+    userId: v.string(),
+    flashcardId: v.id('flashcards'),
+    important: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const progress = await ctx.db
+      .query('userProgress')
+      .withIndex('by_user_and_card', (q) =>
+        q.eq('userId', args.userId).eq('flashcardId', args.flashcardId),
+      )
+      .first();
+    if (progress) {
+      await ctx.db.patch(progress._id, { important: args.important });
+    }
   },
 });

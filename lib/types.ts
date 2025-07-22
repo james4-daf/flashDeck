@@ -25,6 +25,7 @@ export interface ConvexUserProgress {
   reviewCount: number;
   lastCorrect: boolean;
   easeFactor?: number; // Optional ease factor (1.3-2.5)
+  important?: boolean; // Optional important flag
 }
 
 // Simplified option type for flashcard components

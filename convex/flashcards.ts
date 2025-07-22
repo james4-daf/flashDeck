@@ -209,3 +209,90 @@ export const getFlashcardsByList = query({
     return all.filter((card) => card.lists?.includes(args.list));
   },
 });
+
+// Get flashcards by list for a specific user (for studying)
+export const getFlashcardsByListForUser = query({
+  args: {
+    list: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Get all flashcards in the list
+    const allFlashcards = await ctx.db.query('flashcards').collect();
+    const listFlashcards = allFlashcards.filter((card) =>
+      card.lists?.includes(args.list),
+    );
+
+    // Get user's progress for all flashcards
+    const userProgress = await ctx.db
+      .query('userProgress')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    // Create a map of flashcard progress for quick lookup
+    const progressMap = new Map();
+    userProgress.forEach((progress) => {
+      progressMap.set(progress.flashcardId, progress);
+    });
+
+    // Filter flashcards that are due for review or haven't been studied yet
+    const dueListFlashcards = listFlashcards.filter((flashcard) => {
+      const progress = progressMap.get(flashcard._id);
+
+      if (!progress) {
+        // New flashcard that hasn't been studied yet - include it
+        return true;
+      }
+
+      // Existing flashcard - check if it's due for review
+      return progress.nextReviewDate <= now;
+    });
+
+    // Return flashcards with their progress data
+    return dueListFlashcards.map((flashcard) => {
+      const progress = progressMap.get(flashcard._id);
+      return {
+        ...flashcard,
+        progress: progress || null,
+      };
+    });
+  },
+});
+
+// Get all flashcards in a list (for studying, regardless of due status)
+export const getFlashcardsByListForStudying = query({
+  args: {
+    list: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Get all flashcards in the list
+    const allFlashcards = await ctx.db.query('flashcards').collect();
+    const listFlashcards = allFlashcards.filter((card) =>
+      card.lists?.includes(args.list),
+    );
+
+    // Get user's progress for all flashcards
+    const userProgress = await ctx.db
+      .query('userProgress')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    // Create a map of flashcard progress for quick lookup
+    const progressMap = new Map();
+    userProgress.forEach((progress) => {
+      progressMap.set(progress.flashcardId, progress);
+    });
+
+    // Return ALL flashcards in the list (not just due ones)
+    return listFlashcards.map((flashcard) => {
+      const progress = progressMap.get(flashcard._id);
+      return {
+        ...flashcard,
+        progress: progress || null,
+      };
+    });
+  },
+});

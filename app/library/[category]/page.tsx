@@ -1,9 +1,10 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
 import { useQuery } from 'convex/react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 const TECH_LABELS: Record<string, string> = {
   react: 'React',
@@ -13,6 +14,7 @@ const TECH_LABELS: Record<string, string> = {
 
 export default function TechLibraryPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params?.category as string;
   const tech = TECH_LABELS[slug?.toLowerCase()] || slug;
   const flashcards = useQuery(api.flashcards.getAllFlashcards);
@@ -27,9 +29,21 @@ export default function TechLibraryPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 space-y-8">
+      {/* Back Button */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          onClick={() => router.back()}
+          className="flex items-center gap-2"
+        >
+          ← Back
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-900">{tech} Flashcards</h1>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">{tech} Flashcards</CardTitle>
+          <CardTitle className="text-xl">Flashcard Collection</CardTitle>
         </CardHeader>
         <CardContent>
           {techCards.length === 0 ? (

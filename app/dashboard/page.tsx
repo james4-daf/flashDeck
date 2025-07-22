@@ -164,7 +164,12 @@ function RedirectToLogin() {
 function DashboardContent() {
   const { user } = useUser();
   const [isStudying, setIsStudying] = useState(false);
-  const [studyMode, setStudyMode] = useState<'normal' | 'important'>('normal');
+  const [studyMode, setStudyMode] = useState<'normal' | 'important' | 'list'>(
+    'normal',
+  );
+  const [selectedList, setSelectedList] = useState<string | undefined>(
+    undefined,
+  );
 
   const flashcards = useQuery(api.flashcards.getAllFlashcards);
   // Extract unique lists from all flashcards
@@ -195,14 +200,21 @@ function DashboardContent() {
     }
   };
 
-  const handleStartStudying = (mode: 'normal' | 'important' = 'normal') => {
+  const handleStartStudying = (
+    mode: 'normal' | 'important' | 'list' = 'normal',
+    listName?: string,
+  ) => {
     setStudyMode(mode);
+    if (mode === 'list' && listName) {
+      setSelectedList(listName);
+    }
     setIsStudying(true);
   };
 
   const handleCompleteStudying = () => {
     setIsStudying(false);
     setStudyMode('normal');
+    setSelectedList(undefined);
   };
 
   if (isStudying) {
@@ -216,7 +228,9 @@ function DashboardContent() {
                 <span className="text-sm text-slate-600">
                   {studyMode === 'important'
                     ? '📌 Studying Important Cards'
-                    : '📚 Studying All Cards'}
+                    : studyMode === 'list'
+                      ? `📚 Studying ${selectedList?.replace(/([a-z])([0-9])/g, '$1 $2')} List`
+                      : '📚 Studying All Cards'}
                 </span>
                 <Button
                   variant="outline"
@@ -240,6 +254,7 @@ function DashboardContent() {
             userId={user?.id || ''}
             onComplete={handleCompleteStudying}
             studyMode={studyMode}
+            listName={selectedList}
           />
         </main>
       </div>
@@ -465,14 +480,31 @@ function DashboardContent() {
               <CardTitle>Study by List</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-4">
+              <div className="space-y-3">
                 {allLists.length > 0 ? (
                   allLists.map((list) => (
-                    <Link key={list} href={`/library/list/${list}`}>
-                      <Button variant="outline" className="capitalize">
+                    <div
+                      key={list}
+                      className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-lg"
+                    >
+                      <span className="capitalize font-medium text-slate-700">
                         {list.replace(/([a-z])([0-9])/g, '$1 $2')}
-                      </Button>
-                    </Link>
+                      </span>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleStartStudying('list', list)}
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          Study
+                        </Button>
+                        <Link href={`/library/list/${list}`}>
+                          <Button variant="outline" size="sm">
+                            View
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
                   ))
                 ) : (
                   <span className="text-slate-500 text-sm">No lists found</span>

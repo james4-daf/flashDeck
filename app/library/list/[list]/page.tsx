@@ -1,15 +1,20 @@
 'use client';
 
+import { StudySession } from '@/components/StudySession';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
 import { useQuery } from 'convex/react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function ListLibraryPage() {
   const params = useParams();
   const list = params?.list as string;
   const { user } = useUser();
+  const router = useRouter();
+  const [isStudying, setIsStudying] = useState(false);
 
   // Fetch flashcards for this list
   const flashcards = useQuery(api.flashcards.getFlashcardsByList, { list });
@@ -17,6 +22,49 @@ export default function ListLibraryPage() {
   const userProgress = useQuery(api.userProgress.getAllUserProgress, {
     userId: user?.id || '',
   });
+
+  const handleStartStudying = () => {
+    setIsStudying(true);
+  };
+
+  const handleCompleteStudying = () => {
+    setIsStudying(false);
+  };
+
+  if (isStudying) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <nav className="bg-white shadow-sm border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-slate-600">
+                  📚 Studying {list.replace(/([a-z])([0-9])/g, '$1 $2')} List
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={handleCompleteStudying}
+                  className="text-sm"
+                >
+                  Exit Study Session
+                </Button>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <StudySession
+            userId={user?.id || ''}
+            onComplete={handleCompleteStudying}
+            studyMode="list"
+            listName={list}
+          />
+        </main>
+      </div>
+    );
+  }
 
   if (!flashcards || !userProgress) {
     return <div>Loading...</div>;
@@ -39,11 +87,31 @@ export default function ListLibraryPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 space-y-8">
+      {/* Back Button */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          onClick={() => router.back()}
+          className="flex items-center gap-2"
+        >
+          ← Back
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-900">
+          {list.replace(/([a-z])([0-9])/g, '$1 $2')} List
+        </h1>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl capitalize">
-            {list.replace(/([a-z])([0-9])/g, '$1 $2')} Flashcards
-          </CardTitle>
+          <div className="flex justify-between items-start">
+            <CardTitle className="text-xl">Flashcards</CardTitle>
+            <Button
+              onClick={handleStartStudying}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              📚 Study List
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="mb-6 flex gap-8 text-sm text-slate-700">

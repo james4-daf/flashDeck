@@ -10,6 +10,7 @@ export interface ConvexFlashcard {
   category: string;
   tech: string;
   options?: string[];
+  lists?: string[];
 }
 
 export interface ConvexUserProgress {

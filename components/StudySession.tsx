@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { api } from '@/convex/_generated/api';
 import type { ConvexFlashcard } from '@/lib/types';
 import { useMutation, useQuery } from 'convex/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BasicFlashcard } from './flashcard/BasicFlashcard';
 import { MultipleChoiceFlashcard } from './flashcard/MultipleChoiceFlashcard';
 import { TrueFalseFlashcard } from './flashcard/TrueFalseFlashcard';
@@ -14,13 +14,15 @@ import { TrueFalseFlashcard } from './flashcard/TrueFalseFlashcard';
 interface StudySessionProps {
   userId: string;
   onComplete: () => void;
-  studyMode?: 'normal' | 'important';
+  studyMode?: 'normal' | 'important' | 'list';
+  listName?: string;
 }
 
 export function StudySession({
   userId,
   onComplete,
   studyMode = 'normal',
+  listName,
 }: StudySessionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sessionStats, setSessionStats] = useState({
@@ -40,6 +42,15 @@ export function StudySession({
   const importantFlashcards = useQuery(api.flashcards.getImportantFlashcards, {
     userId,
   });
+
+  // Debug the list query parameters
+  const listQueryArgs =
+    studyMode === 'list' && listName ? { list: listName, userId } : 'skip';
+
+  const listFlashcards = useQuery(
+    api.flashcards.getFlashcardsByListForStudying,
+    listQueryArgs,
+  );
   const userProgress = useQuery(api.userProgress.getAllUserProgress, {
     userId,
   });
@@ -67,24 +78,93 @@ export function StudySession({
 
   const MAX_CARDS = 12;
 
+  // Track the current study mode to detect changes
+  const prevStudyModeRef = useRef<{ mode: string; list: string | undefined }>({
+    mode: studyMode,
+    list: listName,
+  });
+
   useEffect(() => {
-    // Choose the appropriate flashcards based on study mode
-    const flashcards =
-      studyMode === 'important' ? importantFlashcards : dueFlashcards;
+    // Check if study mode or list has changed
+    const hasModeChanged =
+      prevStudyModeRef.current.mode !== studyMode ||
+      prevStudyModeRef.current.list !== listName;
 
-    if (flashcards && !cardsLocked) {
-      const filtered = flashcards.filter(
-        (card): card is ConvexFlashcard =>
-          card !== null &&
-          ['basic', 'multiple_choice', 'true_false'].includes(card.type),
-      );
+    if (hasModeChanged) {
+      // Reset session state when mode changes
+      setShuffledCards([]);
+      setCardsLocked(false);
+      setCurrentIndex(0);
+      setSessionStats({ correct: 0, incorrect: 0, total: 0 });
+      setAnswered(false);
+      setLastCorrect(null);
+      setAnswerHistory([]);
+      setShowSummary(false);
 
-      const shuffled = shuffleArray(filtered).slice(0, MAX_CARDS); // Limit to 12
-      setShuffledCards(shuffled);
-      setSessionStats((prev) => ({ ...prev, total: shuffled.length }));
-      setCardsLocked(true); // Lock the cards for this session
+      // Update the ref
+      prevStudyModeRef.current = { mode: studyMode, list: listName };
+      // Don't return early - continue to process cards if data is available
     }
-  }, [dueFlashcards, importantFlashcards, cardsLocked, studyMode]);
+
+    // Choose the appropriate flashcards based on study mode
+    let flashcards;
+    if (studyMode === 'important') {
+      flashcards = importantFlashcards;
+    } else if (studyMode === 'list') {
+      // Only process if we have data from the query
+      if (listFlashcards !== undefined) {
+        // Extract just the flashcard data from the list query result
+        flashcards = listFlashcards.map((item) => ({
+          _id: item._id,
+          _creationTime: item._creationTime,
+          question: item.question,
+          answer: item.answer,
+          type: item.type,
+          category: item.category,
+          tech: item.tech,
+          options: item.options,
+          lists: item.lists,
+        }));
+
+        // Essential debug for list mode
+        console.log('LIST DEBUG:', {
+          listName,
+          listFlashcardsLength: listFlashcards.length,
+          processedLength: flashcards.length,
+          cardsLocked,
+        });
+      } else {
+        // Still loading, don't process yet
+        flashcards = undefined;
+      }
+    } else {
+      flashcards = dueFlashcards;
+    }
+
+    if (flashcards !== undefined && !cardsLocked) {
+      if (flashcards.length > 0) {
+        const filtered = flashcards.filter(
+          (card): card is ConvexFlashcard =>
+            card !== null &&
+            ['basic', 'multiple_choice', 'true_false'].includes(card.type),
+        );
+
+        const shuffled = shuffleArray(filtered).slice(0, MAX_CARDS); // Limit to 12
+        setShuffledCards(shuffled);
+        setSessionStats((prev) => ({ ...prev, total: shuffled.length }));
+        setCardsLocked(true); // Lock the cards for this session
+
+        console.log('CARDS PROCESSED:', shuffled.length, 'cards ready');
+      } else {
+        // No flashcards found, but still lock the session to show empty state
+        setShuffledCards([]);
+        setSessionStats((prev) => ({ ...prev, total: 0 }));
+        setCardsLocked(true);
+
+        console.log('NO CARDS FOUND for mode:', studyMode);
+      }
+    }
+  }, [dueFlashcards, importantFlashcards, listFlashcards, studyMode, listName]);
 
   const handleAnswer = async (isCorrect: boolean) => {
     const currentCard = shuffledCards[currentIndex];
@@ -242,28 +322,53 @@ export function StudySession({
   if (
     studyMode === 'important'
       ? importantFlashcards === undefined
-      : dueFlashcards === undefined
+      : studyMode === 'list'
+        ? listFlashcards === undefined
+        : dueFlashcards === undefined
   ) {
     return (
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading flashcards...</p>
+          <p className="text-slate-600">
+            {studyMode === 'list'
+              ? `Loading flashcards for ${listName?.replace(/([a-z])([0-9])/g, '$1 $2')}...`
+              : 'Loading flashcards...'}
+          </p>
         </div>
       </div>
     );
   }
 
-  if (shuffledCards.length === 0) {
+  // Only show empty state if we have data but no cards after processing
+  if (shuffledCards.length === 0 && cardsLocked) {
+    let message = "You don't have any flashcards due for review right now.";
+    let title = 'No flashcards available';
+
+    if (studyMode === 'list') {
+      title = 'No cards in this list';
+      message = `No flashcards found in the "${listName?.replace(/([a-z])([0-9])/g, '$1 $2')}" list that are due for review.`;
+
+      // Add debugging info for list mode
+      console.log(
+        'EMPTY STATE - List mode:',
+        listName,
+        'has',
+        listFlashcards?.length,
+        'cards from query',
+      );
+    } else if (studyMode === 'important') {
+      title = 'No important cards';
+      message = "You haven't marked any flashcards as important yet.";
+    }
+
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>No flashcards available</CardTitle>
+          <CardTitle>{title}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-slate-600 mb-4">
-            You don&apos;t have any flashcards due for review right now.
-          </p>
+          <p className="text-slate-600 mb-4">{message}</p>
           <Button onClick={onComplete}>Back to Dashboard</Button>
         </CardContent>
       </Card>

@@ -1,6 +1,8 @@
 'use client';
 
+import { LibraryFlashcard } from '@/components/LibraryFlashcard';
 import { StudySession } from '@/components/StudySession';
+import { Accordion } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
@@ -104,7 +106,18 @@ export default function ListLibraryPage() {
       <Card>
         <CardHeader>
           <div className="flex justify-between items-start">
-            <CardTitle className="text-xl">Flashcards</CardTitle>
+            <div>
+              <CardTitle className="text-xl">
+                Flashcards
+                <span className="ml-2 text-sm font-normal text-slate-500">
+                  ({total} cards)
+                </span>
+              </CardTitle>
+              <p className="text-sm text-slate-600 mt-2">
+                Click on any flashcard to practice active recall - try to think
+                of the answer before expanding!
+              </p>
+            </div>
             <Button
               onClick={handleStartStudying}
               className="bg-blue-600 hover:bg-blue-700"
@@ -128,30 +141,39 @@ export default function ListLibraryPage() {
               completed
             </div>
           </div>
-          <p className="text-slate-700 mb-4">
+          <p className="text-slate-700 mb-6">
             You have completed{' '}
             <span className="font-bold text-green-600">{completed}</span> out of{' '}
             <span className="font-bold">{total}</span> cards in this list.
           </p>
+
           {flashcards.length === 0 ? (
-            <p className="text-slate-500">No flashcards in this list yet.</p>
+            <div className="text-center py-8">
+              <p className="text-slate-500">No flashcards in this list yet.</p>
+            </div>
           ) : (
-            <ul className="space-y-2">
-              {flashcards.map((card) => (
-                <li key={card._id} className="p-4 border rounded bg-slate-50">
-                  <div className="font-medium">{card.question}</div>
-                  <div className="text-xs text-slate-500">
-                    Type: {card.type} | Category: {card.category}
-                  </div>
-                  {progressMap.get(card._id) && (
-                    <div className="text-xs mt-1">
-                      Progress: {progressMap.get(card._id)?.reviewCount || 0}{' '}
-                      reviews
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <Accordion>
+              {flashcards.map((card) => {
+                const progress = progressMap.get(card._id);
+                const isCompleted =
+                  progress &&
+                  progress.reviewCount > 0 &&
+                  progress.nextReviewDate > Date.now();
+
+                return (
+                  <LibraryFlashcard
+                    key={card._id}
+                    flashcard={card}
+                    showProgress={true}
+                    progressInfo={{
+                      reviewCount: progress?.reviewCount || 0,
+                      isCompleted: !!isCompleted,
+                      nextReviewDate: progress?.nextReviewDate,
+                    }}
+                  />
+                );
+              })}
+            </Accordion>
           )}
         </CardContent>
       </Card>

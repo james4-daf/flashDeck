@@ -1,5 +1,7 @@
 'use client';
 
+import { LibraryFlashcard } from '@/components/LibraryFlashcard';
+import { Accordion } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
@@ -43,22 +45,32 @@ export default function TechLibraryPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Flashcard Collection</CardTitle>
+          <CardTitle className="text-xl">
+            Flashcard Collection
+            <span className="ml-2 text-sm font-normal text-slate-500">
+              ({techCards.length} cards)
+            </span>
+          </CardTitle>
+          <p className="text-sm text-slate-600">
+            Click on any flashcard to practice active recall - try to think of
+            the answer before expanding!
+          </p>
         </CardHeader>
         <CardContent>
           {techCards.length === 0 ? (
-            <p className="text-slate-500">No flashcards for {tech} yet.</p>
+            <div className="text-center py-8">
+              <p className="text-slate-500">No flashcards for {tech} yet.</p>
+            </div>
           ) : (
-            <ul className="space-y-2">
+            <Accordion>
               {techCards.map((card) => (
-                <li key={card._id} className="p-4 border rounded bg-slate-50">
-                  <div className="font-medium">{card.question}</div>
-                  <div className="text-xs text-slate-500">
-                    Type: {card.type} | Category: {card.category}
-                  </div>
-                </li>
+                <LibraryFlashcard
+                  key={card._id}
+                  flashcard={card}
+                  showProgress={false}
+                />
               ))}
-            </ul>
+            </Accordion>
           )}
         </CardContent>
       </Card>

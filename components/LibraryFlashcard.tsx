@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,

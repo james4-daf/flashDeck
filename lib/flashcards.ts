@@ -7,8 +7,8 @@ export function getNextReviewDate(
   isCorrect: boolean,
 ): Date {
   if (!isCorrect) {
-    // Give wrong answers a 10-minute delay to prevent infinite loops
-    return new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    // Give wrong answers a 20-minute delay to prevent infinite loops
+    return new Date(Date.now() + 20 * 60 * 1000); // 20 minutes
   }
 
   // For correct answers, use exponential backoff

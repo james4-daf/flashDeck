@@ -60,6 +60,77 @@ export const getDueFlashcards = query({
   },
 });
 
+// Get flashcards due for review with session filtering to prevent immediate repetition
+export const getDueFlashcardsWithSessionFilter = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Get recently attempted cards (last 20 minutes)
+    const twentyMinutesAgo = now - 20 * 60 * 1000;
+    const recentAttempts = await ctx.db
+      .query('sessionAttempts')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .filter((q) => q.gte(q.field('attemptedAt'), twentyMinutesAgo))
+      .collect();
+
+    const recentlyAttemptedIds = new Set(
+      recentAttempts.map((a) => a.flashcardId),
+    );
+
+    // Get all flashcards
+    const allFlashcards = await ctx.db.query('flashcards').collect();
+
+    // Get user's progress for all flashcards
+    const userProgress = await ctx.db
+      .query('userProgress')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    // Create a map of flashcard progress for quick lookup
+    const progressMap = new Map();
+    userProgress.forEach((progress) => {
+      progressMap.set(progress.flashcardId, progress);
+    });
+
+    // Filter flashcards: due + not recently attempted
+    const dueFlashcards = allFlashcards.filter((flashcard) => {
+      // Skip recently attempted cards (within 20 minutes)
+      if (recentlyAttemptedIds.has(flashcard._id)) {
+        return false;
+      }
+
+      const progress = progressMap.get(flashcard._id);
+
+      if (!progress) {
+        return true; // New card that hasn't been studied yet
+      }
+
+      return progress.nextReviewDate <= now; // Due for review
+    });
+
+    // If we filtered out too many cards and have very few left,
+    // include correctly answered recent cards to maintain session size
+    if (dueFlashcards.length < 3) {
+      const correctRecentAttempts = recentAttempts.filter((a) => a.isCorrect);
+      const correctRecentIds = new Set(
+        correctRecentAttempts.map((a) => a.flashcardId),
+      );
+
+      const additionalCards = allFlashcards.filter((flashcard) => {
+        if (!correctRecentIds.has(flashcard._id)) return false;
+
+        const progress = progressMap.get(flashcard._id);
+        return !progress || progress.nextReviewDate <= now;
+      });
+
+      dueFlashcards.push(...additionalCards);
+    }
+
+    return dueFlashcards;
+  },
+});
+
 // Get important flashcards for a specific user (regardless of due status)
 export const getImportantFlashcards = query({
   args: { userId: v.string() },

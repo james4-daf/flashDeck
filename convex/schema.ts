@@ -29,7 +29,7 @@ export default defineSchema({
     state: v.optional(
       v.union(
         v.literal('new'), // Never studied
-        v.literal('learning'), // In learning phase (1min → 10min)
+        v.literal('learning'), // In learning phase (20min → 1hr)
         v.literal('review'), // Graduated to review phase
         v.literal('relearning'), // Failed review, back to learning
       ),
@@ -59,4 +59,16 @@ export default defineSchema({
     .index('by_user', ['userId'])
     .index('by_user_and_date', ['userId', 'date'])
     .index('by_date', ['date']),
+
+  // Session attempts tracking to prevent immediate card repetition
+  sessionAttempts: defineTable({
+    userId: v.string(),
+    flashcardId: v.id('flashcards'),
+    attemptedAt: v.number(), // timestamp
+    isCorrect: v.boolean(),
+    sessionId: v.optional(v.string()), // For future analytics
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_and_card', ['userId', 'flashcardId'])
+    .index('by_attempted_at', ['attemptedAt']),
 });

@@ -8,8 +8,8 @@ function getDateString(timestamp: number): string {
 }
 
 // Anki-style learning configuration
-const LEARNING_STEPS = [10, 60]; // 10min → 1hr → graduate to review
-const RELEARNING_STEPS = [10]; // Failed cards: 10min → back to review
+const LEARNING_STEPS = [20, 60]; // 20min → 1hr → graduate to review
+const RELEARNING_STEPS = [20]; // Failed cards: 20min → back to review
 const GRADUATE_INTERVAL = 1; // 1 day when graduating from learning
 const DEFAULT_EASE_FACTOR = 2.5; // Default ease factor
 
@@ -104,8 +104,8 @@ export const recordAttempt = mutation({
     } else {
       // New card - always starts in 'learning' state
       const nextReviewDate = args.isCorrect
-        ? now + LEARNING_STEPS[0] * 60 * 1000 // 10 minutes
-        : now + 10 * 60 * 1000; // 10 minute retry for wrong answers
+        ? now + LEARNING_STEPS[0] * 60 * 1000 // 20 minutes
+        : now + 20 * 60 * 1000; // 20 minute retry for wrong answers
 
       return await ctx.db.insert('userProgress', {
         userId: args.userId,
@@ -142,7 +142,7 @@ function calculateNextProgress(
       return {
         state: 'relearning',
         currentStep: 0,
-        nextReviewDate: now + RELEARNING_STEPS[0] * 60 * 1000, // 10 minutes
+        nextReviewDate: now + RELEARNING_STEPS[0] * 60 * 1000, // 20 minutes
         reviewCount: current.reviewCount,
         easeFactor: Math.max(1.3, currentEase - 0.2), // Decrease ease factor
       };
@@ -224,7 +224,7 @@ function calculateNextProgress(
   return {
     state: current.state,
     currentStep: current.currentStep,
-    nextReviewDate: now + 10 * 60 * 1000, // 10 minutes
+    nextReviewDate: now + 20 * 60 * 1000, // 20 minutes
     reviewCount: current.reviewCount,
     easeFactor: currentEase,
   };

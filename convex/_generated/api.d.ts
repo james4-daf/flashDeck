@@ -14,6 +14,7 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as flashcards from "../flashcards.js";
+import type * as sessionAttempts from "../sessionAttempts.js";
 import type * as userProgress from "../userProgress.js";
 
 /**
@@ -26,6 +27,7 @@ import type * as userProgress from "../userProgress.js";
  */
 declare const fullApi: ApiFromModules<{
   flashcards: typeof flashcards;
+  sessionAttempts: typeof sessionAttempts;
   userProgress: typeof userProgress;
 }>;
 export declare const api: FilterApi<

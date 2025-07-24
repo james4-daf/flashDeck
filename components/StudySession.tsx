@@ -37,8 +37,11 @@ export function StudySession({
   >([]);
   const [showSummary, setShowSummary] = useState(false);
 
-  // Use Convex queries and mutations
-  const dueFlashcards = useQuery(api.flashcards.getDueFlashcards, { userId });
+  // Use Convex queries and mutations - now with session filtering
+  const dueFlashcards = useQuery(
+    api.flashcards.getDueFlashcardsWithSessionFilter,
+    { userId },
+  );
   const importantFlashcards = useQuery(api.flashcards.getImportantFlashcards, {
     userId,
   });
@@ -52,6 +55,9 @@ export function StudySession({
     listQueryArgs,
   );
   const recordAttempt = useMutation(api.userProgress.recordAttempt);
+  const recordSessionAttempt = useMutation(
+    api.sessionAttempts.recordSessionAttempt,
+  );
   const markImportant = useMutation(api.userProgress.markImportant);
 
   // Get current card's progress to show state
@@ -156,11 +162,19 @@ export function StudySession({
     if (!currentCard) return;
 
     try {
-      await recordAttempt({
-        userId,
-        flashcardId: currentCard._id,
-        isCorrect,
-      });
+      // Record both the session attempt AND the progress update
+      await Promise.all([
+        recordSessionAttempt({
+          userId,
+          flashcardId: currentCard._id,
+          isCorrect,
+        }),
+        recordAttempt({
+          userId,
+          flashcardId: currentCard._id,
+          isCorrect,
+        }),
+      ]);
 
       setSessionStats((prev) => ({
         ...prev,

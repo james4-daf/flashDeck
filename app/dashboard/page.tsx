@@ -204,7 +204,7 @@ function DashboardContent() {
           {/* Study Now Card */}
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle className="text-2xl">Ready to Study?</CardTitle>
+              <CardTitle className="text-2xl">Ready to Study? </CardTitle>
             </CardHeader>
             <CardContent>
               {flashcards === undefined ? (

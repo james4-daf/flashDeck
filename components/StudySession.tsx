@@ -14,8 +14,9 @@ import { TrueFalseFlashcard } from './flashcard/TrueFalseFlashcard';
 interface StudySessionProps {
   userId: string;
   onComplete: () => void;
-  studyMode?: 'normal' | 'important' | 'list';
+  studyMode?: 'normal' | 'important' | 'list' | 'topic';
   listName?: string;
+  topicName?: string;
 }
 
 export function StudySession({
@@ -23,6 +24,7 @@ export function StudySession({
   onComplete,
   studyMode = 'normal',
   listName,
+  topicName,
 }: StudySessionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sessionStats, setSessionStats] = useState({
@@ -54,6 +56,15 @@ export function StudySession({
     api.flashcards.getFlashcardsByListForStudying,
     listQueryArgs,
   );
+
+  // Topic study query parameters
+  const topicQueryArgs =
+    studyMode === 'topic' && topicName ? { tech: topicName, userId } : 'skip';
+
+  const topicFlashcards = useQuery(
+    api.flashcards.getFlashcardsByTechForStudying,
+    topicQueryArgs,
+  );
   const recordAttempt = useMutation(api.userProgress.recordAttempt);
   const recordSessionAttempt = useMutation(
     api.sessionAttempts.recordSessionAttempt,
@@ -82,16 +93,22 @@ export function StudySession({
   const MAX_CARDS = 12;
 
   // Track the current study mode to detect changes
-  const prevStudyModeRef = useRef<{ mode: string; list: string | undefined }>({
+  const prevStudyModeRef = useRef<{
+    mode: string;
+    list: string | undefined;
+    topic: string | undefined;
+  }>({
     mode: studyMode,
     list: listName,
+    topic: topicName,
   });
 
   useEffect(() => {
-    // Check if study mode or list has changed
+    // Check if study mode, list, or topic has changed
     const hasModeChanged =
       prevStudyModeRef.current.mode !== studyMode ||
-      prevStudyModeRef.current.list !== listName;
+      prevStudyModeRef.current.list !== listName ||
+      prevStudyModeRef.current.topic !== topicName;
 
     if (hasModeChanged) {
       // Reset session state when mode changes
@@ -105,7 +122,11 @@ export function StudySession({
       setShowSummary(false);
 
       // Update the ref
-      prevStudyModeRef.current = { mode: studyMode, list: listName };
+      prevStudyModeRef.current = {
+        mode: studyMode,
+        list: listName,
+        topic: topicName,
+      };
       // Don't return early - continue to process cards if data is available
     }
 
@@ -118,6 +139,25 @@ export function StudySession({
       if (listFlashcards !== undefined) {
         // Extract just the flashcard data from the list query result
         flashcards = listFlashcards.map((item) => ({
+          _id: item._id,
+          _creationTime: item._creationTime,
+          question: item.question,
+          answer: item.answer,
+          type: item.type,
+          category: item.category,
+          tech: item.tech,
+          options: item.options,
+          lists: item.lists,
+        }));
+      } else {
+        // Still loading, don't process yet
+        flashcards = undefined;
+      }
+    } else if (studyMode === 'topic') {
+      // Only process if we have data from the query
+      if (topicFlashcards !== undefined) {
+        // Extract just the flashcard data from the topic query result
+        flashcards = topicFlashcards.map((item) => ({
           _id: item._id,
           _creationTime: item._creationTime,
           question: item.question,
@@ -155,7 +195,15 @@ export function StudySession({
         setCardsLocked(true);
       }
     }
-  }, [dueFlashcards, importantFlashcards, listFlashcards, studyMode, listName]);
+  }, [
+    dueFlashcards,
+    importantFlashcards,
+    listFlashcards,
+    topicFlashcards,
+    studyMode,
+    listName,
+    topicName,
+  ]);
 
   const handleAnswer = async (isCorrect: boolean) => {
     const currentCard = shuffledCards[currentIndex];
@@ -323,7 +371,9 @@ export function StudySession({
       ? importantFlashcards === undefined
       : studyMode === 'list'
         ? listFlashcards === undefined
-        : dueFlashcards === undefined
+        : studyMode === 'topic'
+          ? topicFlashcards === undefined
+          : dueFlashcards === undefined
   ) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -332,7 +382,9 @@ export function StudySession({
           <p className="text-slate-600">
             {studyMode === 'list'
               ? `Loading flashcards for ${listName?.replace(/([a-z])([0-9])/g, '$1 $2')}...`
-              : 'Loading flashcards...'}
+              : studyMode === 'topic'
+                ? `Loading flashcards for ${topicName}...`
+                : 'Loading flashcards...'}
           </p>
         </div>
       </div>
@@ -350,6 +402,9 @@ export function StudySession({
     } else if (studyMode === 'important') {
       title = 'No important cards';
       message = "You haven't marked any flashcards as important yet.";
+    } else if (studyMode === 'topic') {
+      title = 'No cards in this topic';
+      message = `No flashcards found for the "${topicName}" topic.`;
     }
 
     return (

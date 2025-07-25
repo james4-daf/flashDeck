@@ -367,3 +367,172 @@ export const getFlashcardsByListForStudying = query({
     });
   },
 });
+
+// Get flashcards by technology for a specific user (due cards only)
+export const getFlashcardsByTechForUser = query({
+  args: {
+    tech: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Get all flashcards for the technology (case-insensitive)
+    const allFlashcards = await ctx.db.query('flashcards').collect();
+    const techFlashcards = allFlashcards.filter(
+      (card) => card.tech?.toLowerCase() === args.tech.toLowerCase(),
+    );
+
+    // Get user's progress for all flashcards
+    const userProgress = await ctx.db
+      .query('userProgress')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    // Create a map of flashcard progress for quick lookup
+    const progressMap = new Map();
+    userProgress.forEach((progress) => {
+      progressMap.set(progress.flashcardId, progress);
+    });
+
+    // Filter flashcards that are due for review or haven't been studied yet
+    const dueTechFlashcards = techFlashcards.filter((flashcard) => {
+      const progress = progressMap.get(flashcard._id);
+
+      if (!progress) {
+        // New flashcard that hasn't been studied yet - include it
+        return true;
+      }
+
+      // Existing flashcard - check if it's due for review
+      return progress.nextReviewDate <= now;
+    });
+
+    // Return flashcards with their progress data
+    return dueTechFlashcards.map((flashcard) => {
+      const progress = progressMap.get(flashcard._id);
+      return {
+        ...flashcard,
+        progress: progress || null,
+      };
+    });
+  },
+});
+
+// Get all flashcards by technology (for studying, regardless of due status)
+export const getFlashcardsByTechForStudying = query({
+  args: {
+    tech: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Get all flashcards for the technology (case-insensitive)
+    const allFlashcards = await ctx.db.query('flashcards').collect();
+    const techFlashcards = allFlashcards.filter(
+      (card) => card.tech?.toLowerCase() === args.tech.toLowerCase(),
+    );
+
+    // Get user's progress for all flashcards
+    const userProgress = await ctx.db
+      .query('userProgress')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    // Create a map of flashcard progress for quick lookup
+    const progressMap = new Map();
+    userProgress.forEach((progress) => {
+      progressMap.set(progress.flashcardId, progress);
+    });
+
+    // Return ALL flashcards for the technology (not just due ones)
+    return techFlashcards.map((flashcard) => {
+      const progress = progressMap.get(flashcard._id);
+      return {
+        ...flashcard,
+        progress: progress || null,
+      };
+    });
+  },
+});
+
+// Get flashcards grouped by due time for smart grouping display
+export const getFlashcardsByDueTime = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const fifteenMinutesFromNow = now + 15 * 60 * 1000;
+    const oneHourFromNow = now + 60 * 60 * 1000;
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+    const endOfTodayMs = endOfToday.getTime();
+    const endOfTomorrow = new Date(endOfToday);
+    endOfTomorrow.setDate(endOfToday.getDate() + 1);
+    const endOfTomorrowMs = endOfTomorrow.getTime();
+
+    // Get all flashcards
+    const allFlashcards = await ctx.db.query('flashcards').collect();
+
+    // Get user's progress for all flashcards
+    const userProgress = await ctx.db
+      .query('userProgress')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    // Create a map of flashcard progress for quick lookup
+    const progressMap = new Map();
+    userProgress.forEach((progress) => {
+      progressMap.set(progress.flashcardId, progress);
+    });
+
+    // Group flashcards by due time
+    const dueNow = [];
+    const dueIn15Minutes = [];
+    const dueInNextHour = [];
+    const dueToday = [];
+    const dueTomorrow = [];
+
+    allFlashcards.forEach((flashcard) => {
+      const progress = progressMap.get(flashcard._id);
+
+      if (!progress) {
+        // New card - due now
+        dueNow.push(flashcard);
+        return;
+      }
+
+      const dueTime = progress.nextReviewDate;
+
+      if (dueTime <= now) {
+        // Past due
+        dueNow.push(flashcard);
+      } else if (dueTime <= fifteenMinutesFromNow) {
+        // Due in next 15 minutes
+        dueIn15Minutes.push(flashcard);
+      } else if (dueTime <= oneHourFromNow) {
+        // Due in next hour (but not in 15 minutes)
+        dueInNextHour.push(flashcard);
+      } else if (dueTime <= endOfTodayMs) {
+        // Due today (but not in next hour)
+        dueToday.push(flashcard);
+      } else if (dueTime <= endOfTomorrowMs) {
+        // Due tomorrow
+        dueTomorrow.push(flashcard);
+      }
+      // Cards due later than tomorrow are not included
+    });
+
+    return {
+      dueNow: dueNow.length,
+      dueIn15Minutes: dueIn15Minutes.length,
+      dueInNextHour: dueInNextHour.length,
+      dueToday: dueToday.length,
+      dueTomorrow: dueTomorrow.length,
+      total:
+        dueNow.length +
+        dueIn15Minutes.length +
+        dueInNextHour.length +
+        dueToday.length +
+        dueTomorrow.length,
+    };
+  },
+});

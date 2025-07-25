@@ -72,6 +72,11 @@ function DashboardContent() {
     userId: user?.id || '',
   });
 
+  // Fetch flashcards grouped by due time for smart grouping
+  const dueTimeGroups = useQuery(api.flashcards.getFlashcardsByDueTime, {
+    userId: user?.id || '',
+  });
+
   const createSampleFlashcards = useMutation(
     api.flashcards.createSampleFlashcards,
   );
@@ -151,22 +156,57 @@ function DashboardContent() {
   const progressMap = new Map(
     userProgress?.map((p) => [p.flashcardId, p]) ?? [],
   );
-  // Completed: reviewed at least once and not due
-  const completed = flashcards
+
+  // Calculate due cards using the same logic as the study session
+  const now = Date.now();
+  const due = flashcards
     ? flashcards.filter((card) => {
         const progress = progressMap.get(card._id);
-        return (
-          progress &&
-          progress.reviewCount > 0 &&
-          progress.nextReviewDate > Date.now()
-        );
+
+        if (!progress) {
+          return true; // New card - due for study
+        }
+
+        return progress.nextReviewDate <= now; // Due for review
       }).length
     : 0;
-  const due = total - completed;
 
   // Count important cards
   const importantCards = userProgress?.filter((p) => p.important) || [];
   const importantCount = importantCards.length;
+
+  // Helper function to calculate next review time
+  const getNextReviewTime = () => {
+    if (!userProgress || userProgress.length === 0) {
+      return null;
+    }
+
+    const now = Date.now();
+    const futureReviews = userProgress
+      .filter((progress) => progress.nextReviewDate > now)
+      .sort((a, b) => a.nextReviewDate - b.nextReviewDate);
+
+    if (futureReviews.length === 0) {
+      return null;
+    }
+
+    const nextReview = futureReviews[0].nextReviewDate;
+    const timeDiff = nextReview - now;
+
+    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+      return `${days} day${days === 1 ? '' : 's'}`;
+    } else if (hours > 0) {
+      return `${hours} hour${hours === 1 ? '' : 's'}`;
+    } else {
+      const minutes = Math.floor(timeDiff / (1000 * 60));
+      return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+    }
+  };
+
+  const nextReviewTime = getNextReviewTime();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -214,50 +254,148 @@ function DashboardContent() {
                     Checking for due flashcards...
                   </p>
                 </div>
-              ) : flashcards.length > 0 ? (
-                <div className="space-y-4">
-                  <p className="text-slate-700">
-                    You have{' '}
-                    <span className="font-semibold text-blue-600">{due}</span>{' '}
-                    flashcard{due === 1 ? '' : 's'} due for review.
-                  </p>
-
-                  {/* Study buttons */}
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button
-                      onClick={() => handleStartStudying('normal')}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-lg py-6"
-                    >
-                      Start Studying
-                    </Button>
-
-                    {importantCount > 0 && (
-                      <Button
-                        onClick={() => handleStartStudying('important')}
-                        variant="outline"
-                        className="flex-1 text-lg py-6 border-orange-300 text-orange-700 hover:bg-orange-50"
-                      >
-                        📌 Study Important ({importantCount})
-                      </Button>
-                    )}
-                  </div>
-
-                  {importantCount > 0 && (
-                    <p className="text-sm text-slate-600">
-                      You have {importantCount} important card
-                      {importantCount === 1 ? '' : 's'} marked for focused
-                      study.
-                    </p>
-                  )}
-                </div>
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-slate-600 mb-4">
-                    🎉 No flashcards due for review right now!
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    Come back later or add more flashcards to your library.
-                  </p>
+                <div className="space-y-4">
+                  {due > 0 ? (
+                    <>
+                      {dueTimeGroups ? (
+                        <div className="space-y-3">
+                          <p className="text-slate-700">
+                            You have{' '}
+                            <span className="font-semibold text-blue-600">
+                              {due}
+                            </span>{' '}
+                            flashcard{due === 1 ? '' : 's'} due for review.
+                          </p>
+
+                          {/* Smart grouping counters */}
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            {dueTimeGroups.dueNow > 0 && (
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                                <span className="text-red-700 font-medium">
+                                  {dueTimeGroups.dueNow} due now
+                                </span>
+                              </div>
+                            )}
+                            {dueTimeGroups.dueIn15Minutes > 0 && (
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                                <span className="text-orange-700 font-medium">
+                                  {dueTimeGroups.dueIn15Minutes} due in 15 min
+                                </span>
+                              </div>
+                            )}
+                            {dueTimeGroups.dueInNextHour > 0 && (
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                <span className="text-yellow-700 font-medium">
+                                  {dueTimeGroups.dueInNextHour} due in next hour
+                                </span>
+                              </div>
+                            )}
+                            {dueTimeGroups.dueToday > 0 && (
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                <span className="text-blue-700 font-medium">
+                                  {dueTimeGroups.dueToday} due today
+                                </span>
+                              </div>
+                            )}
+                            {dueTimeGroups.dueTomorrow > 0 && (
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                <span className="text-green-700 font-medium">
+                                  {dueTimeGroups.dueTomorrow} due tomorrow
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-slate-700">
+                          You have{' '}
+                          <span className="font-semibold text-blue-600">
+                            {due}
+                          </span>{' '}
+                          flashcard{due === 1 ? '' : 's'} due for review.
+                        </p>
+                      )}
+
+                      {/* Study buttons */}
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          onClick={() => handleStartStudying('normal')}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-lg py-6"
+                        >
+                          Start Studying
+                        </Button>
+
+                        {importantCount > 0 && (
+                          <Button
+                            onClick={() => handleStartStudying('important')}
+                            variant="outline"
+                            className="flex-1 text-lg py-6 border-orange-300 text-orange-700 hover:bg-orange-50"
+                          >
+                            📌 Study Important ({importantCount})
+                          </Button>
+                        )}
+                      </div>
+
+                      {importantCount > 0 && (
+                        <p className="text-sm text-slate-600">
+                          You have {importantCount} important card
+                          {importantCount === 1 ? '' : 's'} marked for focused
+                          study.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="text-center">
+                        <p className="text-slate-700 text-lg font-medium">
+                          🎉 All caught up!
+                        </p>
+                        {nextReviewTime ? (
+                          <p className="text-sm text-slate-500 mt-1">
+                            Next review in {nextReviewTime}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-slate-500 mt-1">
+                            No more reviews scheduled
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Study buttons */}
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          disabled
+                          className="flex-1 bg-slate-300 text-slate-500 text-lg py-6 cursor-not-allowed"
+                        >
+                          No Cards Due
+                        </Button>
+
+                        {importantCount > 0 && (
+                          <Button
+                            onClick={() => handleStartStudying('important')}
+                            variant="outline"
+                            className="flex-1 text-lg py-6 border-orange-300 text-orange-700 hover:bg-orange-50"
+                          >
+                            📌 Study Important ({importantCount})
+                          </Button>
+                        )}
+                      </div>
+
+                      {importantCount > 0 && (
+                        <p className="text-sm text-slate-600 text-center">
+                          You can still study your {importantCount} important
+                          card
+                          {importantCount === 1 ? '' : 's'} for focused review.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

@@ -172,7 +172,7 @@ function calculateNextProgress(
         state: 'review',
         currentStep: 0,
         nextReviewDate: now + GRADUATE_INTERVAL * 24 * 60 * 60 * 1000, // 1 day
-        reviewCount: 1,
+        reviewCount: 0, // Start at 0 since this is the first review
         easeFactor: currentEase,
       };
     } else {

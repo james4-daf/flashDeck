@@ -267,50 +267,6 @@ function DashboardContent() {
                             </span>{' '}
                             flashcard{due === 1 ? '' : 's'} due for review.
                           </p>
-
-                          {/* Smart grouping counters */}
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            {dueTimeGroups.dueNow > 0 && (
-                              <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                                <span className="text-red-700 font-medium">
-                                  {dueTimeGroups.dueNow} due now
-                                </span>
-                              </div>
-                            )}
-                            {dueTimeGroups.dueIn15Minutes > 0 && (
-                              <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                                <span className="text-orange-700 font-medium">
-                                  {dueTimeGroups.dueIn15Minutes} due in 15 min
-                                </span>
-                              </div>
-                            )}
-                            {dueTimeGroups.dueInNextHour > 0 && (
-                              <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                                <span className="text-yellow-700 font-medium">
-                                  {dueTimeGroups.dueInNextHour} due in next hour
-                                </span>
-                              </div>
-                            )}
-                            {dueTimeGroups.dueToday > 0 && (
-                              <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                <span className="text-blue-700 font-medium">
-                                  {dueTimeGroups.dueToday} due today
-                                </span>
-                              </div>
-                            )}
-                            {dueTimeGroups.dueTomorrow > 0 && (
-                              <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                                <span className="text-green-700 font-medium">
-                                  {dueTimeGroups.dueTomorrow} due tomorrow
-                                </span>
-                              </div>
-                            )}
-                          </div>
                         </div>
                       ) : (
                         <p className="text-slate-700">
@@ -348,6 +304,44 @@ function DashboardContent() {
                           {importantCount === 1 ? '' : 's'} marked for focused
                           study.
                         </p>
+                      )}
+
+                      {/* Smart grouping counters */}
+                      {dueTimeGroups && (
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          {dueTimeGroups.dueIn15Minutes > 0 && (
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                              <span className="text-orange-700 font-medium">
+                                {dueTimeGroups.dueIn15Minutes} due in 15 min
+                              </span>
+                            </div>
+                          )}
+                          {dueTimeGroups.dueInNextHour > 0 && (
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                              <span className="text-yellow-700 font-medium">
+                                {dueTimeGroups.dueInNextHour} due in next hour
+                              </span>
+                            </div>
+                          )}
+                          {dueTimeGroups.dueToday > 0 && (
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                              <span className="text-blue-700 font-medium">
+                                {dueTimeGroups.dueToday} due today
+                              </span>
+                            </div>
+                          )}
+                          {dueTimeGroups.dueTomorrow > 0 && (
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                              <span className="text-green-700 font-medium">
+                                {dueTimeGroups.dueTomorrow} due tomorrow
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </>
                   ) : (

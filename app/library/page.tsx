@@ -70,6 +70,30 @@ export default function LibraryPage() {
             </Link>
           ))}
         </div>
+
+        {/* Learning Guides Section */}
+        <div className="mt-12">
+          <h3 className="text-2xl font-bold text-slate-900 mb-6">
+            Learning Guides
+          </h3>
+          <div className="flex flex-col gap-4">
+            <Link href="/react/usestate" className="group">
+              <Card className="w-full hover:shadow-lg transition-all duration-200 border-slate-200 group-hover:border-green-300 group-hover:scale-[1.02] cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="text-xl group-hover:text-green-600 transition-colors">
+                    React useState Hook - Complete Guide
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-slate-500">
+                    Learn how to use the useState hook in React with examples
+                    and practice flashcards
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
       </main>
     </div>
   );

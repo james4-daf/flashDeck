@@ -1,0 +1,218 @@
+---
+title: 'React useState Hook - Complete Guide'
+description: 'Learn how to use the useState hook in React with examples and practice flashcards'
+topic: 'React'
+---
+
+# React useState Hook - Complete Guide
+
+The `useState` hook is one of the most fundamental hooks in React. It allows functional components to manage state, which was previously only possible with class components.
+
+## What is useState?
+
+`useState` is a React Hook that lets you add state to functional components. It returns an array with two elements: the current state value and a function to update it.
+
+## Basic Syntax
+
+```javascript
+const [state, setState] = useState(initialValue);
+```
+
+## Simple Counter Example
+
+```javascript
+import React, { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>Click me</button>
+    </div>
+  );
+}
+```
+
+## Multiple State Variables
+
+You can use multiple `useState` calls in the same component:
+
+```javascript
+function UserProfile() {
+  const [name, setName] = useState('');
+  const [age, setAge] = useState(0);
+  const [email, setEmail] = useState('');
+
+  return (
+    <div>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Name"
+      />
+      <input
+        value={age}
+        onChange={(e) => setAge(Number(e.target.value))}
+        placeholder="Age"
+      />
+      <input
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Email"
+      />
+    </div>
+  );
+}
+```
+
+## State with Objects
+
+When working with objects, remember that state updates are shallow merged:
+
+```javascript
+function UserForm() {
+  const [user, setUser] = useState({
+    name: '',
+    email: '',
+    age: 0,
+  });
+
+  const updateUser = (field, value) => {
+    setUser((prevUser) => ({
+      ...prevUser, // Spread the previous state
+      [field]: value,
+    }));
+  };
+
+  return (
+    <div>
+      <input
+        value={user.name}
+        onChange={(e) => updateUser('name', e.target.value)}
+      />
+      <input
+        value={user.email}
+        onChange={(e) => updateUser('email', e.target.value)}
+      />
+    </div>
+  );
+}
+```
+
+<Tip>
+  Always use the functional update form when the new state depends on the
+  previous state. This ensures you're working with the most current value.
+</Tip>
+
+## Functional Updates
+
+When the new state depends on the previous state, use the functional update form:
+
+```javascript
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  // ❌ Wrong - might not use the latest state
+  const incrementWrong = () => setCount(count + 1);
+
+  // ✅ Correct - uses the latest state
+  const incrementCorrect = () => setCount((prevCount) => prevCount + 1);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={incrementCorrect}>Increment</button>
+    </div>
+  );
+}
+```
+
+<Warning>
+  Never mutate state directly. Always use the setter function provided by
+  useState. React needs to know when state changes to trigger re-renders.
+</Warning>
+
+## Lazy Initial State
+
+If the initial state requires expensive computation, you can pass a function:
+
+```javascript
+function ExpensiveComponent() {
+  // This function only runs once during the first render
+  const [data, setData] = useState(() => {
+    const initialData = expensiveCalculation();
+    return initialData;
+  });
+
+  return <div>{/* render data */}</div>;
+}
+```
+
+## Common Patterns
+
+### Toggle State
+
+```javascript
+function ToggleButton() {
+  const [isOn, setIsOn] = useState(false);
+
+  const toggle = () => setIsOn((prev) => !prev);
+
+  return <button onClick={toggle}>{isOn ? 'ON' : 'OFF'}</button>;
+}
+```
+
+### Form State
+
+```javascript
+function ContactForm() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: '',
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  return (
+    <form>
+      <input name="name" value={formData.name} onChange={handleChange} />
+      <input name="email" value={formData.email} onChange={handleChange} />
+      <textarea
+        name="message"
+        value={formData.message}
+        onChange={handleChange}
+      />
+    </form>
+  );
+}
+```
+
+## Practice What You've Learned
+
+<FlashcardPractice topic="React" title="React useState" />
+
+## Key Takeaways
+
+1. **useState** returns an array with the current state and a setter function
+2. **State updates are asynchronous** - use functional updates when depending on previous state
+3. **Never mutate state directly** - always use the setter function
+4. **State is preserved between re-renders** - it doesn't reset unless you explicitly change it
+5. **Multiple useState calls** are fine in the same component
+6. **Lazy initialization** can be used for expensive initial state calculations
+
+## Common Mistakes to Avoid
+
+- **Mutating state directly**: `state.push(item)` instead of `setState([...state, item])`
+- **Not using functional updates**: `setCount(count + 1)` in rapid succession
+- **Forgetting to spread objects**: `setUser({ age: 25 })` instead of `setUser({ ...user, age: 25 })`
+
+Ready to test your knowledge? Try the flashcards above!

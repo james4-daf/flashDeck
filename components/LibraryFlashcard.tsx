@@ -83,10 +83,6 @@ export function LibraryFlashcard({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
-              {getCardTypeDisplay()}
-            </span>
-
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               {flashcard.category}
             </span>

@@ -405,7 +405,7 @@ function DashboardContent() {
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm text-slate-600 mb-1">
-                      Total Flashcards
+                      Number of Flashcards
                     </p>
                     <p className="text-2xl font-bold text-slate-900">{total}</p>
                   </div>
@@ -434,6 +434,7 @@ function DashboardContent() {
                       />
                       <p className="text-xs text-slate-500 mt-1">
                         {Math.round(((total - due) / total) * 100)}% reviewed
+                        recently
                       </p>
                     </div>
                   )}

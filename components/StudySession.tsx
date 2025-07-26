@@ -514,12 +514,12 @@ export function StudySession({
   const cardStateInfo = getCardStateInfo();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Progress Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-base sm:text-lg font-semibold text-slate-900">
               Study Session
             </h2>
             <div className="flex items-center gap-2 mt-1">
@@ -528,7 +528,7 @@ export function StudySession({
               </span>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <p className="text-sm font-medium text-slate-900">
               {accuracy}% accuracy
             </p>
@@ -542,9 +542,9 @@ export function StudySession({
 
       {/* Feedback and Next Card Button */}
       {answered && (
-        <div className="flex flex-col items-center mt-4">
+        <div className="flex flex-col items-center mt-4 sm:mt-6">
           <div
-            className={`inline-flex items-center px-4 py-2 rounded-lg font-medium mb-4 ${
+            className={`inline-flex items-center px-3 sm:px-4 py-2 rounded-lg font-medium mb-3 sm:mb-4 text-sm sm:text-base ${
               lastCorrect
                 ? 'bg-green-100 text-green-800'
                 : 'bg-red-100 text-red-800'
@@ -552,7 +552,7 @@ export function StudySession({
           >
             {lastCorrect ? '✅ Correct!' : '❌ Incorrect'}
           </div>
-          <Button onClick={handleNextCard} className="w-48">
+          <Button onClick={handleNextCard} className="w-full sm:w-48">
             Next Card
           </Button>
         </div>

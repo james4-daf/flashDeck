@@ -22,7 +22,7 @@ export function MultipleChoiceFlashcard({
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [shuffledOptions, setShuffledOptions] = useState<FlashcardOption[]>([]);
-  const [, setIsCorrect] = useState<boolean | null>(null);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
   // Determine if this is a multiple answer question (answer is array with multiple correct options)
   const isMultipleAnswer =
@@ -163,12 +163,9 @@ export function MultipleChoiceFlashcard({
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-xl">{flashcard.question}</CardTitle>
-        {isMultipleAnswer && !showingResult && (
-          <p className="text-sm text-slate-600 mt-2">
-            Select all correct answers
-          </p>
-        )}
+        <CardTitle className="text-lg sm:text-xl">
+          {flashcard.question}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-3">
@@ -177,25 +174,38 @@ export function MultipleChoiceFlashcard({
               key={option.id}
               onClick={() => handleSelectAnswer(option.id)}
               disabled={showingResult || pending}
-              className={`w-full p-4 text-left rounded-lg border-2 transition-colors flex items-start ${getOptionStyle(
+              className={`w-full p-3 sm:p-4 border-2 rounded-lg text-left transition-colors flex items-start ${getOptionStyle(
                 option.id,
               )}`}
             >
-              {!showingResult && getOptionIcon(option.id)}
-              <div className="flex-1">
-                <span className="font-medium">{option.option_text}</span>
-              </div>
+              {getOptionIcon(option.id)}
+              <span className="text-sm sm:text-base">{option.option_text}</span>
             </button>
           ))}
         </div>
+
         {!showingResult && (
           <Button
             onClick={handleSubmit}
-            disabled={selectedAnswers.length === 0 || pending || showingResult}
-            className="w-full"
+            disabled={selectedAnswers.length === 0 || pending}
+            className="w-full py-3 sm:py-4 text-base sm:text-lg"
           >
-            {pending ? 'Submitting...' : 'Submit Answer'}
+            Submit Answer
           </Button>
+        )}
+
+        {showingResult && (
+          <div className="mt-4 p-3 sm:p-4 rounded-lg text-center">
+            <div
+              className={`inline-flex items-center px-3 sm:px-4 py-2 rounded-lg font-medium text-sm sm:text-base ${
+                isCorrect
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }`}
+            >
+              {isCorrect ? '✅ Correct!' : '❌ Incorrect'}
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

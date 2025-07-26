@@ -61,13 +61,13 @@ export default function LoginPage() {
                   <SignUp
                     routing="hash"
                     signInUrl="/#sign-in"
-                    afterSignUpUrl="/dashboard"
+                    fallbackRedirectUrl="/dashboard"
                   />
                 ) : (
                   <SignIn
                     routing="hash"
                     signUpUrl="/#sign-up"
-                    afterSignInUrl="/dashboard"
+                    fallbackRedirectUrl="/dashboard"
                   />
                 )}
               </div>

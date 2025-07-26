@@ -1,6 +1,7 @@
 'use client';
 
 import { MDXRemote } from 'next-mdx-remote/rsc';
+import Link from 'next/link';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -45,7 +46,7 @@ const components = {
       </div>
     </div>
   ),
-  FlashcardPractice: ({ topic, title }: { topic: string; title: string }) => (
+  FlashcardPractice: ({ title }: { title: string }) => (
     <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 my-8">
       <h3 className="text-blue-900 text-xl font-semibold mb-4">
         Practice {title}
@@ -53,12 +54,12 @@ const components = {
       <p className="text-blue-800 mb-4">
         Ready to test your knowledge? Practice with flashcards on this topic.
       </p>
-      <a
+      <Link
         href="/dashboard"
         className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
       >
         Start Practice Session
-      </a>
+      </Link>
     </div>
   ),
 };

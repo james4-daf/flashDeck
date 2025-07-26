@@ -10,38 +10,40 @@ import { useState } from 'react';
 // Custom components for MDX
 const components = {
   // You can override default HTML elements
-  h1: (props: any) => (
+  h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
     <h1 className="text-3xl font-bold text-slate-900 mb-6" {...props} />
   ),
-  h2: (props: any) => (
+  h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
     <h2 className="text-2xl font-bold text-slate-800 mb-4" {...props} />
   ),
-  h3: (props: any) => (
+  h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
     <h3 className="text-xl font-semibold text-slate-700 mb-3" {...props} />
   ),
-  p: (props: any) => (
+  p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
     <p className="text-slate-700 mb-4 leading-relaxed" {...props} />
   ),
-  ul: (props: any) => (
+  ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
     <ul className="list-disc list-inside mb-4 space-y-2" {...props} />
   ),
-  ol: (props: any) => (
+  ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
     <ol className="list-decimal list-inside mb-4 space-y-2" {...props} />
   ),
-  li: (props: any) => <li className="text-slate-700" {...props} />,
-  code: (props: any) => (
+  li: (props: React.HTMLAttributes<HTMLLIElement>) => (
+    <li className="text-slate-700" {...props} />
+  ),
+  code: (props: React.HTMLAttributes<HTMLElement>) => (
     <code
       className="bg-slate-100 px-2 py-1 rounded text-sm font-mono text-slate-800"
       {...props}
     />
   ),
-  pre: (props: any) => (
+  pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
     <pre
       className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto mb-4"
       {...props}
     />
   ),
-  blockquote: (props: any) => (
+  blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
       className="border-l-4 border-blue-500 pl-4 italic text-slate-600 mb-4"
       {...props}
@@ -49,7 +51,7 @@ const components = {
   ),
 
   // Custom components for flashcards
-  FlashcardPractice: ({ topic, title }: { topic: string; title: string }) => {
+  FlashcardPractice: ({ title }: { title: string }) => {
     const { user } = useUser();
     const [isStudying, setIsStudying] = useState(false);
 
@@ -60,7 +62,7 @@ const components = {
             userId={user?.id || ''}
             onComplete={() => setIsStudying(false)}
             studyMode="topic"
-            topicName={topic}
+            topicName={title}
           />
         </div>
       );

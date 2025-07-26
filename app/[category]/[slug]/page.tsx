@@ -1,14 +1,15 @@
 import { MDXContent } from '@/components/MDXContent';
 import fs from 'fs';
 import matter from 'gray-matter';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import path from 'path';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     category: string;
     slug: string;
-  };
+  }>;
 }
 
 export async function generateStaticParams() {
@@ -57,31 +58,31 @@ export default async function MDXPage({ params }: PageProps) {
         <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <a
+              <Link
                 href="/dashboard"
                 className="text-xl font-bold text-slate-900 hover:text-blue-600 transition-colors"
               >
                 FlashDeck
-              </a>
+              </Link>
               <div className="flex items-center gap-6">
-                <a
+                <Link
                   href="/library"
                   className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
                 >
                   Library
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/dashboard"
                   className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
                 >
                   Dashboard
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/dashboard"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                   Start Studying
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -115,6 +116,7 @@ export default async function MDXPage({ params }: PageProps) {
       </div>
     );
   } catch (error) {
+    console.error(error);
     notFound();
   }
 }

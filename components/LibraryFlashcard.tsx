@@ -33,19 +33,6 @@ export function LibraryFlashcard({
     return flashcard.answer.join(', ');
   };
 
-  const getCardTypeDisplay = () => {
-    switch (flashcard.type) {
-      case 'basic':
-        return 'Basic';
-      case 'multiple_choice':
-        return 'Multiple Choice';
-      case 'true_false':
-        return 'True/False';
-      default:
-        return flashcard.type;
-    }
-  };
-
   const getProgressBadge = () => {
     if (!showProgress || !progressInfo) return null;
 

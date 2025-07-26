@@ -40,14 +40,14 @@ export default function ListLibraryPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-slate-600">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <span className="hidden sm:inline text-sm text-slate-600">
                   📚 Studying {list.replace(/([a-z])([0-9])/g, '$1 $2')} List
                 </span>
                 <Button
                   variant="outline"
                   onClick={handleCompleteStudying}
-                  className="text-sm"
+                  className="text-xs sm:text-sm px-2 sm:px-3"
                 >
                   Exit Study Session
                 </Button>
@@ -56,7 +56,7 @@ export default function ListLibraryPage() {
           </div>
         </nav>
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           <StudySession
             userId={user?.id || ''}
             onComplete={handleCompleteStudying}
@@ -88,95 +88,113 @@ export default function ListLibraryPage() {
   const due = total - completed;
 
   return (
-    <div className="max-w-4xl mx-auto py-8 space-y-8">
-      {/* Back Button */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          onClick={() => router.back()}
-          className="flex items-center gap-2"
-        >
-          ← Back
-        </Button>
-        <h1 className="text-2xl font-bold text-slate-900">
-          {list.replace(/([a-z])([0-9])/g, '$1 $2')} List
-        </h1>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-xl">
-                Flashcards
-                <span className="ml-2 text-sm font-normal text-slate-500">
-                  ({total} cards)
-                </span>
-              </CardTitle>
-              <p className="text-sm text-slate-600 mt-2">
-                Click on any flashcard to practice active recall - try to think
-                of the answer before expanding!
-              </p>
-            </div>
-            <Button
-              onClick={handleStartStudying}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              📚 Study List
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-6 flex gap-8 text-sm text-slate-700">
-            <div>
-              <span className="font-bold text-lg">{total}</span> total
-            </div>
-            <div>
-              <span className="font-bold text-lg text-blue-600">{due}</span> due
-            </div>
-            <div>
-              <span className="font-bold text-lg text-green-600">
-                {completed}
-              </span>{' '}
-              completed
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <nav className="bg-white shadow-sm border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Button
+                variant="outline"
+                onClick={() => router.back()}
+                className="text-xs sm:text-sm px-2 sm:px-3"
+              >
+                ← Back
+              </Button>
             </div>
           </div>
-          <p className="text-slate-700 mb-6">
-            You have completed{' '}
-            <span className="font-bold text-green-600">{completed}</span> out of{' '}
-            <span className="font-bold">{total}</span> cards in this list.
-          </p>
+        </div>
+      </nav>
 
-          {flashcards.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-slate-500">No flashcards in this list yet.</p>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+            {list.replace(/([a-z])([0-9])/g, '$1 $2')} List
+          </h1>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+              <div>
+                <CardTitle className="text-lg sm:text-xl">
+                  Flashcards
+                  <span className="ml-2 text-xs sm:text-sm font-normal text-slate-500">
+                    ({total} cards)
+                  </span>
+                </CardTitle>
+                <p className="text-xs sm:text-sm text-slate-600 mt-2">
+                  Click on any flashcard to practice active recall - try to
+                  think of the answer before expanding!
+                </p>
+              </div>
+              <Button
+                onClick={handleStartStudying}
+                className="bg-blue-600 hover:bg-blue-700 text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
+              >
+                📚 Study List
+              </Button>
             </div>
-          ) : (
-            <Accordion>
-              {flashcards.map((card) => {
-                const progress = progressMap.get(card._id);
-                const isCompleted =
-                  progress &&
-                  progress.reviewCount > 0 &&
-                  progress.nextReviewDate > Date.now();
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-4 sm:gap-8 text-xs sm:text-sm text-slate-700">
+              <div>
+                <span className="font-bold text-base sm:text-lg">{total}</span>{' '}
+                total
+              </div>
+              <div>
+                <span className="font-bold text-base sm:text-lg text-blue-600">
+                  {due}
+                </span>{' '}
+                due
+              </div>
+              <div>
+                <span className="font-bold text-base sm:text-lg text-green-600">
+                  {completed}
+                </span>{' '}
+                completed
+              </div>
+            </div>
+            <p className="text-slate-700 mb-4 sm:mb-6 text-sm sm:text-base">
+              You have completed{' '}
+              <span className="font-bold text-green-600">{completed}</span> out
+              of <span className="font-bold">{total}</span> cards in this list.
+            </p>
 
-                return (
-                  <LibraryFlashcard
-                    key={card._id}
-                    flashcard={card}
-                    showProgress={true}
-                    progressInfo={{
-                      reviewCount: progress?.reviewCount || 0,
-                      isCompleted: !!isCompleted,
-                      nextReviewDate: progress?.nextReviewDate,
-                    }}
-                  />
-                );
-              })}
-            </Accordion>
-          )}
-        </CardContent>
-      </Card>
+            {flashcards.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-slate-500 text-sm sm:text-base">
+                  No flashcards in this list yet.
+                </p>
+              </div>
+            ) : (
+              <Accordion>
+                {flashcards.map((card) => {
+                  const progress = progressMap.get(card._id);
+                  const isCompleted =
+                    progress &&
+                    progress.reviewCount > 0 &&
+                    progress.nextReviewDate > Date.now();
+
+                  return (
+                    <LibraryFlashcard
+                      key={card._id}
+                      flashcard={card}
+                      showProgress={true}
+                      progressInfo={{
+                        reviewCount: progress?.reviewCount || 0,
+                        isCompleted: !!isCompleted,
+                        nextReviewDate: progress?.nextReviewDate,
+                      }}
+                    />
+                  );
+                })}
+              </Accordion>
+            )}
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }

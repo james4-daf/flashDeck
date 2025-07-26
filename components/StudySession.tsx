@@ -271,13 +271,18 @@ export function StudySession({
       return (
         <Card className="w-full max-w-2xl mx-auto">
           <CardHeader>
-            <CardTitle>Session Complete!</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">
+              Session Complete!
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-slate-600 mb-4">
+            <p className="text-slate-600 mb-4 text-sm sm:text-base">
               You&apos;ve completed all flashcards in this session.
             </p>
-            <Button onClick={onComplete} className="w-full">
+            <Button
+              onClick={onComplete}
+              className="w-full py-3 sm:py-4 text-base sm:text-lg"
+            >
               Back to Dashboard
             </Button>
           </CardContent>
@@ -290,13 +295,18 @@ export function StudySession({
       return (
         <Card className="w-full max-w-2xl mx-auto">
           <CardHeader>
-            <CardTitle>Error Loading Flashcard</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">
+              Error Loading Flashcard
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-slate-600 mb-4">
+            <p className="text-slate-600 mb-4 text-sm sm:text-base">
               There was an issue loading the current flashcard.
             </p>
-            <Button onClick={onComplete} className="w-full">
+            <Button
+              onClick={onComplete}
+              className="w-full py-3 sm:py-4 text-base sm:text-lg"
+            >
               Back to Dashboard
             </Button>
           </CardContent>
@@ -351,13 +361,18 @@ export function StudySession({
         return (
           <Card className="w-full max-w-2xl mx-auto">
             <CardHeader>
-              <CardTitle>Unsupported Flashcard Type</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">
+                Unsupported Flashcard Type
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-slate-600 mb-4">
+              <p className="text-slate-600 mb-4 text-sm sm:text-base">
                 This flashcard type is not yet supported.
               </p>
-              <Button onClick={handleNextCard} className="w-full">
+              <Button
+                onClick={handleNextCard}
+                className="w-full py-3 sm:py-4 text-base sm:text-lg"
+              >
                 Skip Card
               </Button>
             </CardContent>
@@ -379,7 +394,7 @@ export function StudySession({
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">
+          <p className="text-slate-600 text-sm sm:text-base px-4">
             {studyMode === 'list'
               ? `Loading flashcards for ${listName?.replace(/([a-z])([0-9])/g, '$1 $2')}...`
               : studyMode === 'topic'
@@ -410,11 +425,16 @@ export function StudySession({
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">{title}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-slate-600 mb-4">{message}</p>
-          <Button onClick={onComplete}>Back to Dashboard</Button>
+          <p className="text-slate-600 mb-4 text-sm sm:text-base">{message}</p>
+          <Button
+            onClick={onComplete}
+            className="w-full py-3 sm:py-4 text-base sm:text-lg"
+          >
+            Back to Dashboard
+          </Button>
         </CardContent>
       </Card>
     );
@@ -422,44 +442,47 @@ export function StudySession({
 
   if (showSummary) {
     return (
-      <Card className="w-full max-w-2xl mx-auto mt-8">
+      <Card className="w-full max-w-2xl mx-auto mt-4 sm:mt-8">
         <CardHeader>
-          <CardTitle>Session Summary</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Session Summary</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
-            <p className="font-semibold text-green-700 mb-2">
+            <p className="font-semibold text-green-700 mb-2 text-sm sm:text-base">
               Correct Answers:
             </p>
             <ul className="mb-4 list-disc list-inside">
               {answerHistory.filter((a) => a.isCorrect).length === 0 && (
-                <li className="text-slate-500">None</li>
+                <li className="text-slate-500 text-sm sm:text-base">None</li>
               )}
               {answerHistory
                 .filter((a) => a.isCorrect)
                 .map((a, i) => (
-                  <li key={i} className="text-green-800">
+                  <li key={i} className="text-green-800 text-sm sm:text-base">
                     {a.card.question}
                   </li>
                 ))}
             </ul>
-            <p className="font-semibold text-red-700 mb-2">
+            <p className="font-semibold text-red-700 mb-2 text-sm sm:text-base">
               Incorrect Answers:
             </p>
             <ul className="mb-4 list-disc list-inside">
               {answerHistory.filter((a) => !a.isCorrect).length === 0 && (
-                <li className="text-slate-500">None</li>
+                <li className="text-slate-500 text-sm sm:text-base">None</li>
               )}
               {answerHistory
                 .filter((a) => !a.isCorrect)
                 .map((a, i) => (
-                  <li key={i} className="text-red-800">
+                  <li key={i} className="text-red-800 text-sm sm:text-base">
                     {a.card.question}
                   </li>
                 ))}
             </ul>
           </div>
-          <Button onClick={onComplete} className="w-full">
+          <Button
+            onClick={onComplete}
+            className="w-full py-3 sm:py-4 text-base sm:text-lg"
+          >
             Back to Dashboard
           </Button>
         </CardContent>
@@ -491,18 +514,21 @@ export function StudySession({
       case 'learning':
         return {
           label: `Learning (Step ${currentStep + 1})`,
+          shortLabel: `Learning ${currentStep + 1}`,
           color: 'text-yellow-600',
           icon: '📚',
         };
       case 'review':
         return {
           label: `Review (${reviewCount} times)`,
+          shortLabel: `Review ${reviewCount}`,
           color: 'text-green-600',
           icon: '✅',
         };
       case 'relearning':
         return {
           label: `Relearning (Step ${currentStep + 1})`,
+          shortLabel: `Relearning ${currentStep + 1}`,
           color: 'text-orange-600',
           icon: '🔄',
         };
@@ -524,7 +550,8 @@ export function StudySession({
             </h2>
             <div className="flex items-center gap-2 mt-1">
               <span className={`text-xs font-medium ${cardStateInfo.color}`}>
-                {cardStateInfo.icon} {cardStateInfo.label}
+                {cardStateInfo.icon}{' '}
+                {cardStateInfo.shortLabel || cardStateInfo.label}
               </span>
             </div>
           </div>

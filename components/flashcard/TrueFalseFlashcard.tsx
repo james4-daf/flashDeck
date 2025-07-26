@@ -38,21 +38,23 @@ export function TrueFalseFlashcard({
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-xl">{flashcard.question}</CardTitle>
+        <CardTitle className="text-lg sm:text-xl">
+          {flashcard.question}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {!showingResult && (
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <Button
               onClick={() => handleAnswer(true)}
-              className="flex-1 bg-green-600 hover:bg-green-700"
+              className="flex-1 bg-green-600 hover:bg-green-700 py-3 sm:py-4 text-base sm:text-lg"
             >
               True
             </Button>
             <Button
               onClick={() => handleAnswer(false)}
               variant="outline"
-              className="flex-1 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+              className="flex-1 bg-red-50 border-red-200 text-red-700 hover:bg-red-100 py-3 sm:py-4 text-base sm:text-lg"
             >
               False
             </Button>

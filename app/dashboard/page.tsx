@@ -114,8 +114,8 @@ function DashboardContent() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-slate-600">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <span className="hidden sm:inline text-sm text-slate-600">
                   {studyMode === 'important'
                     ? '📌 Studying Important Cards'
                     : studyMode === 'list'
@@ -125,12 +125,12 @@ function DashboardContent() {
                 <Button
                   variant="outline"
                   onClick={handleCompleteStudying}
-                  className="text-sm"
+                  className="text-xs sm:text-sm px-2 sm:px-3"
                 >
                   Exit Study Session
                 </Button>
                 <SignOutButton>
-                  <button className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-sm">
+                  <button className="bg-red-600 text-white px-2 sm:px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-xs sm:text-sm">
                     Sign Out
                   </button>
                 </SignOutButton>
@@ -139,7 +139,7 @@ function DashboardContent() {
           </div>
         </nav>
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           <StudySession
             userId={user?.id || ''}
             onComplete={handleCompleteStudying}

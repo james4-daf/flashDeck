@@ -77,19 +77,19 @@ export function BasicFlashcard({
             </div>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Button
+                onClick={() => handleAnswer(true)}
+                className="flex-1 transition-colors bg-green-600 hover:bg-green-700 text-white py-3 sm:py-4 text-base sm:text-lg"
+                disabled={showingResult}
+              >
+                Correct
+              </Button>
+              <Button
                 variant="outline"
                 onClick={() => handleAnswer(false)}
                 className="flex-1 transition-colors bg-red-50 border-red-200 text-red-700 hover:bg-red-100 py-3 sm:py-4 text-base sm:text-lg"
                 disabled={showingResult}
               >
                 Incorrect
-              </Button>
-              <Button
-                onClick={() => handleAnswer(true)}
-                className="flex-1 transition-colors bg-green-600 hover:bg-green-700 text-white py-3 sm:py-4 text-base sm:text-lg"
-                disabled={showingResult}
-              >
-                Correct
               </Button>
             </div>
 

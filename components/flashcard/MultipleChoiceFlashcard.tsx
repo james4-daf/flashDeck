@@ -11,6 +11,12 @@ interface MultipleChoiceFlashcardProps {
   options: FlashcardOption[];
   onAnswer: (isCorrect: boolean) => void;
   showingResult?: boolean;
+  cardStateInfo?: {
+    label: string;
+    shortLabel?: string;
+    color: string;
+    icon: string;
+  };
 }
 
 export function MultipleChoiceFlashcard({
@@ -18,6 +24,7 @@ export function MultipleChoiceFlashcard({
   options,
   onAnswer,
   showingResult = false,
+  cardStateInfo,
 }: MultipleChoiceFlashcardProps) {
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
@@ -163,9 +170,19 @@ export function MultipleChoiceFlashcard({
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-lg sm:text-xl">
-          {flashcard.question}
-        </CardTitle>
+        <div className="space-y-2">
+          <CardTitle className="text-lg sm:text-xl">
+            {flashcard.question}
+          </CardTitle>
+          {cardStateInfo && (
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${cardStateInfo.color}`}>
+                {cardStateInfo.icon}{' '}
+                {cardStateInfo.shortLabel || cardStateInfo.label}
+              </span>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-3">
@@ -188,24 +205,20 @@ export function MultipleChoiceFlashcard({
           <Button
             onClick={handleSubmit}
             disabled={selectedAnswers.length === 0 || pending}
-            className="w-full py-3 sm:py-4 text-base sm:text-lg"
+            className={`w-full transition-all duration-200 py-3 sm:py-4 text-base sm:text-lg ${
+              isCorrect === true
+                ? 'bg-green-500 text-white scale-105'
+                : isCorrect === false
+                  ? 'bg-red-500 text-white scale-105'
+                  : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
-            Submit Answer
+            {isCorrect === true
+              ? '✓ Correct!'
+              : isCorrect === false
+                ? '✗ Incorrect'
+                : 'Submit Answer'}
           </Button>
-        )}
-
-        {showingResult && (
-          <div className="mt-4 p-3 sm:p-4 rounded-lg text-center">
-            <div
-              className={`inline-flex items-center px-3 sm:px-4 py-2 rounded-lg font-medium text-sm sm:text-base ${
-                isCorrect
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-              }`}
-            >
-              {isCorrect ? '✅ Correct!' : '❌ Incorrect'}
-            </div>
-          </div>
         )}
       </CardContent>
     </Card>

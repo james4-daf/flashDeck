@@ -11,19 +11,28 @@ interface CodeSnippetFlashcardProps {
   flashcard: ConvexFlashcard;
   onAnswer: (isCorrect: boolean) => void;
   showingResult?: boolean;
+  cardStateInfo?: {
+    label: string;
+    shortLabel?: string;
+    color: string;
+    icon: string;
+  };
 }
 
 export function CodeSnippetFlashcard({
   flashcard,
   onAnswer,
   showingResult = false,
+  cardStateInfo,
 }: CodeSnippetFlashcardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(
+    null,
+  );
 
   useEffect(() => {
     setShowAnswer(false);
-    setIsCorrect(null);
+    setLastAnswerCorrect(null);
   }, [flashcard._id]);
 
   const handleShowAnswer = () => {
@@ -31,7 +40,7 @@ export function CodeSnippetFlashcard({
   };
 
   const handleAnswer = (isCorrect: boolean) => {
-    setIsCorrect(isCorrect);
+    setLastAnswerCorrect(isCorrect);
     playAnswerSound(isCorrect);
     onAnswer(isCorrect);
   };
@@ -74,7 +83,17 @@ export function CodeSnippetFlashcard({
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-xl">{questionText}</CardTitle>
+        <div className="space-y-2">
+          <CardTitle className="text-lg sm:text-xl">{questionText}</CardTitle>
+          {cardStateInfo && (
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${cardStateInfo.color}`}>
+                {cardStateInfo.icon}{' '}
+                {cardStateInfo.shortLabel || cardStateInfo.label}
+              </span>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Always show the code block */}
@@ -121,25 +140,29 @@ export function CodeSnippetFlashcard({
               <Button
                 variant="outline"
                 onClick={() => handleAnswer(false)}
-                className={`flex-1 transition-colors ${
-                  isCorrect === false
-                    ? 'bg-red-500 text-white border-red-500'
-                    : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
+                className={`flex-1 transition-all duration-200 ${
+                  lastAnswerCorrect === false
+                    ? 'bg-red-500 text-white border-red-500 scale-105'
+                    : lastAnswerCorrect === true
+                      ? 'bg-slate-100 text-slate-400 border-slate-200'
+                      : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
                 }`}
                 disabled={showingResult}
               >
-                {isCorrect === false ? '✓ Incorrect' : 'Incorrect'}
+                {lastAnswerCorrect === false ? '✗ Incorrect' : 'Incorrect'}
               </Button>
               <Button
                 onClick={() => handleAnswer(true)}
-                className={`flex-1 transition-colors ${
-                  isCorrect === true
-                    ? 'bg-green-500 text-white'
-                    : 'bg-green-600 hover:bg-green-700'
+                className={`flex-1 transition-all duration-200 ${
+                  lastAnswerCorrect === true
+                    ? 'bg-green-500 text-white scale-105'
+                    : lastAnswerCorrect === false
+                      ? 'bg-slate-100 text-slate-400 border-slate-200'
+                      : 'bg-green-600 hover:bg-green-700'
                 }`}
                 disabled={showingResult}
               >
-                {isCorrect === true ? '✓ Correct' : 'Correct'}
+                {lastAnswerCorrect === true ? '✓ Correct' : 'Correct'}
               </Button>
             </div>
           </div>

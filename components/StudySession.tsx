@@ -8,6 +8,8 @@ import type { ConvexFlashcard } from '@/lib/types';
 import { useMutation, useQuery } from 'convex/react';
 import { useEffect, useRef, useState } from 'react';
 import { BasicFlashcard } from './flashcard/BasicFlashcard';
+import { CodeSnippetFlashcard } from './flashcard/CodeSnippetFlashcard';
+import { FillBlankFlashcard } from './flashcard/FillBlankFlashcard';
 import { MultipleChoiceFlashcard } from './flashcard/MultipleChoiceFlashcard';
 import { TrueFalseFlashcard } from './flashcard/TrueFalseFlashcard';
 
@@ -33,7 +35,7 @@ export function StudySession({
     total: 0,
   });
   const [answered, setAnswered] = useState(false);
-  const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
+  const [, setLastCorrect] = useState<boolean | null>(null);
   const [answerHistory, setAnswerHistory] = useState<
     { card: ConvexFlashcard; isCorrect: boolean }[]
   >([]);
@@ -179,10 +181,16 @@ export function StudySession({
     if (flashcards !== undefined && !cardsLocked) {
       if (flashcards.length > 0) {
         const filtered = flashcards.filter(
-          (card): card is ConvexFlashcard =>
+          (card) =>
             card !== null &&
-            ['basic', 'multiple_choice', 'true_false'].includes(card.type),
-        );
+            [
+              'basic',
+              'multiple_choice',
+              'true_false',
+              'fill_blank',
+              'code_snippet',
+            ].includes(card.type),
+        ) as ConvexFlashcard[];
 
         const shuffled = shuffleArray(filtered).slice(0, MAX_CARDS); // Limit to 12
         setShuffledCards(shuffled);
@@ -327,6 +335,7 @@ export function StudySession({
             onMarkImportant={handleMarkImportant}
             showImportantButton={shouldShowImportantButton}
             isImportant={!!currentProgress?.important}
+            cardStateInfo={cardStateInfo}
           />
         );
       case 'multiple_choice':
@@ -347,6 +356,7 @@ export function StudySession({
             }
             onAnswer={handleAnswer}
             showingResult={answered}
+            cardStateInfo={cardStateInfo}
           />
         );
       case 'true_false':
@@ -355,6 +365,25 @@ export function StudySession({
             flashcard={flashcard}
             onAnswer={handleAnswer}
             showingResult={answered}
+            cardStateInfo={cardStateInfo}
+          />
+        );
+      case 'fill_blank':
+        return (
+          <FillBlankFlashcard
+            flashcard={flashcard}
+            onAnswer={handleAnswer}
+            showingResult={answered}
+            cardStateInfo={cardStateInfo}
+          />
+        );
+      case 'code_snippet':
+        return (
+          <CodeSnippetFlashcard
+            flashcard={flashcard}
+            onAnswer={handleAnswer}
+            showingResult={answered}
+            cardStateInfo={cardStateInfo}
           />
         );
       default:
@@ -540,50 +569,37 @@ export function StudySession({
   const cardStateInfo = getCardStateInfo();
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Progress Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4">
-          <div>
-            <h2 className="text-base sm:text-lg font-semibold text-slate-900">
-              Study Session
-            </h2>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`text-xs font-medium ${cardStateInfo.color}`}>
-                {cardStateInfo.icon}{' '}
-                {cardStateInfo.shortLabel || cardStateInfo.label}
-              </span>
-            </div>
+    <div className="relative min-h-screen pb-24">
+      {/* Current Flashcard */}
+      <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+        {renderFlashcard()}
+
+        {/* Next Card Button */}
+        {answered && (
+          <div className="flex flex-col items-center mt-4 sm:mt-6">
+            <Button onClick={handleNextCard} className="w-full sm:w-48">
+              Next Card
+            </Button>
           </div>
-          <div className="text-left sm:text-right">
-            <p className="text-sm font-medium text-slate-900">
-              {accuracy}% accuracy
-            </p>
-          </div>
-        </div>
-        <Progress value={progress} className="w-full" />
+        )}
       </div>
 
-      {/* Current Flashcard */}
-      {renderFlashcard()}
-
-      {/* Feedback and Next Card Button */}
-      {answered && (
-        <div className="flex flex-col items-center mt-4 sm:mt-6">
-          <div
-            className={`inline-flex items-center px-3 sm:px-4 py-2 rounded-lg font-medium mb-3 sm:mb-4 text-sm sm:text-base ${
-              lastCorrect
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
-            }`}
-          >
-            {lastCorrect ? '✅ Correct!' : '❌ Incorrect'}
+      {/* Progress Header - Pinned to Bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg z-50">
+        <div className="flex justify-center py-3 sm:py-4">
+          <div className="w-full max-w-2xl mx-auto px-4 sm:px-6">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-sm sm:text-base font-semibold text-slate-900">
+                Study Session
+              </h2>
+              <p className="text-xs sm:text-sm font-medium text-slate-900">
+                {accuracy}% accuracy
+              </p>
+            </div>
+            <Progress value={progress} className="w-full h-2" />
           </div>
-          <Button onClick={handleNextCard} className="w-full sm:w-48">
-            Next Card
-          </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

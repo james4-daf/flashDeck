@@ -13,6 +13,12 @@ interface BasicFlashcardProps {
   onMarkImportant?: (important: boolean) => void;
   showImportantButton?: boolean;
   isImportant?: boolean;
+  cardStateInfo?: {
+    label: string;
+    shortLabel?: string;
+    color: string;
+    icon: string;
+  };
 }
 
 export function BasicFlashcard({
@@ -22,13 +28,16 @@ export function BasicFlashcard({
   onMarkImportant,
   showImportantButton = false,
   isImportant = false,
+  cardStateInfo,
 }: BasicFlashcardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
-  const [, setIsCorrect] = useState<boolean | null>(null);
+  const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(
+    null,
+  );
 
   useEffect(() => {
     setShowAnswer(false);
-    setIsCorrect(null);
+    setLastAnswerCorrect(null);
   }, [flashcard._id]);
 
   const handleShowAnswer = () => {
@@ -36,7 +45,7 @@ export function BasicFlashcard({
   };
 
   const handleAnswer = (isCorrect: boolean) => {
-    setIsCorrect(isCorrect);
+    setLastAnswerCorrect(isCorrect);
     playAnswerSound(isCorrect);
     onAnswer(isCorrect);
   };
@@ -55,9 +64,19 @@ export function BasicFlashcard({
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-lg sm:text-xl">
-          {flashcard.question}
-        </CardTitle>
+        <div className="space-y-2">
+          <CardTitle className="text-lg sm:text-xl">
+            {flashcard.question}
+          </CardTitle>
+          {cardStateInfo && (
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium ${cardStateInfo.color}`}>
+                {cardStateInfo.icon}{' '}
+                {cardStateInfo.shortLabel || cardStateInfo.label}
+              </span>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {!showAnswer ? (
@@ -78,25 +97,38 @@ export function BasicFlashcard({
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Button
                 onClick={() => handleAnswer(true)}
-                className="flex-1 transition-colors bg-green-600 hover:bg-green-700 text-white py-3 sm:py-4 text-base sm:text-lg"
+                className={`flex-1 transition-all duration-200 py-3 sm:py-4 text-base sm:text-lg ${
+                  lastAnswerCorrect === true
+                    ? 'bg-green-500 text-white scale-105'
+                    : lastAnswerCorrect === false
+                      ? 'bg-slate-100 text-slate-400 border-slate-200'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
                 disabled={showingResult}
               >
-                Correct
+                {lastAnswerCorrect === true ? '✓ Correct' : 'Correct'}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => handleAnswer(false)}
-                className="flex-1 transition-colors bg-red-50 border-red-200 text-red-700 hover:bg-red-100 py-3 sm:py-4 text-base sm:text-lg"
+                className={`flex-1 transition-all duration-200 py-3 sm:py-4 text-base sm:text-lg ${
+                  lastAnswerCorrect === false
+                    ? 'bg-red-500 text-white border-red-500 scale-105'
+                    : lastAnswerCorrect === true
+                      ? 'bg-slate-100 text-slate-400 border-slate-200'
+                      : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
+                }`}
                 disabled={showingResult}
               >
-                Incorrect
+                {lastAnswerCorrect === false ? '✗ Incorrect' : 'Incorrect'}
               </Button>
             </div>
 
             {/* Mark as Important button - shown after incorrect answer */}
-            {showImportantButton && onMarkImportant && (
-              <div className="pt-4 border-t border-slate-200">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+            {showImportantButton &&
+              onMarkImportant &&
+              lastAnswerCorrect === false && (
+                <div className="pt-4 border-t border-slate-200 flex justify-between items-center">
                   <span className="text-xs sm:text-sm text-slate-600">
                     Having trouble with this card?
                   </span>
@@ -113,8 +145,7 @@ export function BasicFlashcard({
                     {isImportant ? '📌 Important' : '📌 Mark as Important'}
                   </Button>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         )}
       </CardContent>

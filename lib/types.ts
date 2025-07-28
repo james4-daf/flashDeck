@@ -6,7 +6,12 @@ export interface ConvexFlashcard {
   _creationTime: number;
   question: string;
   answer: string | string[];
-  type: 'basic' | 'multiple_choice' | 'true_false';
+  type:
+    | 'basic'
+    | 'multiple_choice'
+    | 'true_false'
+    | 'fill_blank'
+    | 'code_snippet';
   category: string;
   tech?: string;
   options?: string[];

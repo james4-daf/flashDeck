@@ -14,6 +14,11 @@ const fredoka = Fredoka({
 export const metadata: Metadata = {
   title: 'FlashDeck',
   description: 'FlashDeck',
+  icons: {
+    icon: '/flashdeckLogo.png',
+    shortcut: '/flashdeckLogo.png',
+    apple: '/flashdeckLogo.png',
+  },
 };
 
 export default function RootLayout({

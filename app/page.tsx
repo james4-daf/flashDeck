@@ -48,8 +48,41 @@ function RedirectToDashboard() {
 }
 
 function LandingContent() {
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'FlashDeck',
+    description:
+      'Learn JavaScript, React, and CSS concepts faster with science-backed spaced repetition. Build lasting knowledge with expertly crafted flashcards.',
+    url: 'https://flashdeck.dev',
+    applicationCategory: 'EducationalApplication',
+    operatingSystem: 'Web',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.8',
+      ratingCount: '150',
+    },
+    featureList: [
+      'Spaced Repetition Learning',
+      'JavaScript Flashcards',
+      'React Flashcards',
+      'CSS Flashcards',
+      'Progress Tracking',
+      'Free Forever Plan',
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

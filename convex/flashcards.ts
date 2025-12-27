@@ -439,31 +439,19 @@ export const getFlashcardsByListForStudying = query({
   },
 });
 
-// Get flashcards by technology (optimized with index)
+// Get flashcards by technology (case-insensitive)
 export const getFlashcardsByTech = query({
   args: {
     tech: v.string(),
   },
   handler: async (ctx, args) => {
-    // Try to use index first, but fallback to filtering all if index doesn't exist yet
-    try {
-      const techFlashcards = await ctx.db
-        .query('flashcards')
-        .withIndex('by_tech', (q) => q.eq('tech', args.tech))
-        .collect();
-      
-      // If index matched, return results (may need case-insensitive filtering)
-      if (techFlashcards.length > 0) {
-        return techFlashcards;
-      }
-    } catch (error) {
-      // Index might not exist yet, fall through to manual filtering
-    }
+    const techLower = args.tech.toLowerCase();
     
-    // Fallback: filter all flashcards manually (case-insensitive)
+    // Get all flashcards and filter case-insensitively
+    // This handles cases where tech values might be "React", "react", "REACT", etc.
     const allFlashcards = await ctx.db.query('flashcards').collect();
     return allFlashcards.filter(
-      (card) => card.tech?.toLowerCase() === args.tech.toLowerCase(),
+      (card) => card.tech?.toLowerCase() === techLower,
     );
   },
 });

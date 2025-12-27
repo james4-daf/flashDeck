@@ -24,7 +24,10 @@ export default function TechLibraryPage() {
   const router = useRouter();
   const slug = params?.category as string;
   const tech = TECH_LABELS[slug?.toLowerCase()] || slug;
-  const flashcards = useQuery(api.flashcards.getAllFlashcards);
+  const flashcards = useQuery(
+    api.flashcards.getFlashcardsByTech,
+    tech ? { tech } : 'skip',
+  );
 
   const handleStartStudying = () => {
     setIsStudying(true);
@@ -38,9 +41,8 @@ export default function TechLibraryPage() {
     return <div>Loading...</div>;
   }
 
-  const techCards = flashcards.filter(
-    (card) => card.tech?.toLowerCase() === tech.toLowerCase(),
-  );
+  // Query already returns only the tech-specific cards, no filtering needed
+  const techCards = flashcards;
 
   // Show study session if user is studying
   if (isStudying) {

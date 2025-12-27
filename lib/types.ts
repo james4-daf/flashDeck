@@ -71,3 +71,15 @@ export interface SessionStats {
   incorrect: number;
   total: number;
 }
+
+// Deck types
+export interface ConvexDeck {
+  _id: Id<'decks'>;
+  _creationTime: number;
+  name: string;
+  description?: string;
+  isPublic: boolean;
+  createdBy: string;
+  upvoteCount: number;
+  cardCount: number;
+}

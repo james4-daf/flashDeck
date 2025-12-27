@@ -1,6 +1,8 @@
 'use client';
 
 import { StudySession } from '@/components/StudySession';
+import { SubscriptionStatus } from '@/components/SubscriptionStatus';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -15,6 +17,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { User } from 'lucide-react';
 
 export default function Dashboard() {
   return (
@@ -54,6 +57,17 @@ function DashboardContent() {
   );
   const [selectedList, setSelectedList] = useState<string | undefined>(
     undefined,
+  );
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Check subscription status
+  const isPremium = useQuery(
+    api.subscriptions.isPremium,
+    user?.id ? { userId: user.id } : 'skip',
+  );
+  const featureAccess = useQuery(
+    api.subscriptions.getFeatureAccess,
+    user?.id ? { userId: user.id } : 'skip',
   );
 
   const flashcards = useQuery(api.flashcards.getAllFlashcards);
@@ -223,12 +237,24 @@ function DashboardContent() {
                   Library
                 </Button>
               </Link>
-              {user && (
-                <span className="hidden sm:inline text-sm text-slate-600">
-                  Welcome,{' '}
-                  {user.firstName || user.emailAddresses[0]?.emailAddress}!
-                </span>
-              )}
+              <Link href="/community">
+                <Button
+                  variant="outline"
+                  className="text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  Community
+                </Button>
+              </Link>
+              <Link href="/profile">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full p-2 h-9 w-9 flex items-center justify-center"
+                  title={user ? `Profile - ${user.firstName || user.emailAddresses[0]?.emailAddress}` : 'Profile'}
+                >
+                  <User className="h-4 w-4" />
+                </Button>
+              </Link>
               <SignOutButton>
                 <button className="bg-red-600 text-white px-2 sm:px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-xs sm:text-sm">
                   Sign Out
@@ -565,6 +591,29 @@ function DashboardContent() {
               </div>
             </CardContent>
           </Card>
+          
+          {/* Upgrade Prompt for Free Users */}
+          {!isPremium && (
+            <Card className="flex-1 border-blue-200 bg-blue-50">
+              <CardHeader>
+                <CardTitle className="text-lg sm:text-xl text-blue-900">
+                  Unlock Premium
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-blue-800 mb-4">
+                  Upgrade to access 20+ premium topics, unlimited decks, and
+                  all features!
+                </p>
+                <Button
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  Upgrade Now
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick Actions */}
           <Card className="flex-1">
@@ -620,6 +669,13 @@ function DashboardContent() {
             </CardContent>
           </Card>
         </div>
+        
+        {showUpgradeModal && (
+          <UpgradeModal
+            open={showUpgradeModal}
+            onOpenChange={setShowUpgradeModal}
+          />
+        )}
       </main>
     </div>
   );

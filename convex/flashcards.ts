@@ -1,5 +1,6 @@
 // convex/flashcards.ts
 import { v } from 'convex/values';
+import { Doc } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // Get all active flashcards (for testing)
@@ -8,6 +9,76 @@ export const getAllFlashcards = query({
   handler: async (ctx) => {
     const cards = await ctx.db.query('flashcards').collect();
     return cards;
+  },
+});
+
+// Get all unique categories with counts (optimized)
+export const getAllCategories = query({
+  args: {},
+  handler: async (ctx) => {
+    // Use a more efficient approach - get all flashcards but only once
+    const flashcards = await ctx.db.query('flashcards').collect();
+    const categoryMap = new Map<string, number>();
+    
+    flashcards.forEach((card) => {
+      if (card.category) {
+        categoryMap.set(card.category, (categoryMap.get(card.category) || 0) + 1);
+      }
+    });
+    
+    return Array.from(categoryMap.keys()).sort();
+  },
+});
+
+// Get categories with counts (optimized version)
+export const getCategoriesWithCounts = query({
+  args: {},
+  handler: async (ctx) => {
+    const flashcards = await ctx.db.query('flashcards').collect();
+    const categoryMap = new Map<string, number>();
+    
+    flashcards.forEach((card) => {
+      if (card.category) {
+        categoryMap.set(card.category, (categoryMap.get(card.category) || 0) + 1);
+      }
+    });
+    
+    return Object.fromEntries(categoryMap);
+  },
+});
+
+// Get all unique tech values (optimized)
+export const getAllTech = query({
+  args: {},
+  handler: async (ctx) => {
+    const flashcards = await ctx.db.query('flashcards').collect();
+    const techSet = new Set<string>();
+    
+    flashcards.forEach((card) => {
+      if (card.tech) {
+        techSet.add(card.tech);
+      }
+    });
+    
+    return Array.from(techSet).sort();
+  },
+});
+
+// Get tech values with counts (optimized version)
+export const getTechWithCounts = query({
+  args: {},
+  handler: async (ctx) => {
+    const flashcards = await ctx.db.query('flashcards').collect();
+    const techMap = new Map<string, number>();
+    
+    flashcards.forEach((card) => {
+      if (card.tech) {
+        const techLower = card.tech.toLowerCase();
+        techMap.set(techLower, (techMap.get(techLower) || 0) + 1);
+      }
+    });
+    
+    return Object.fromEntries(techMap);
   },
 });
 
@@ -368,6 +439,35 @@ export const getFlashcardsByListForStudying = query({
   },
 });
 
+// Get flashcards by technology (optimized with index)
+export const getFlashcardsByTech = query({
+  args: {
+    tech: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Try to use index first, but fallback to filtering all if index doesn't exist yet
+    try {
+      const techFlashcards = await ctx.db
+        .query('flashcards')
+        .withIndex('by_tech', (q) => q.eq('tech', args.tech))
+        .collect();
+      
+      // If index matched, return results (may need case-insensitive filtering)
+      if (techFlashcards.length > 0) {
+        return techFlashcards;
+      }
+    } catch (error) {
+      // Index might not exist yet, fall through to manual filtering
+    }
+    
+    // Fallback: filter all flashcards manually (case-insensitive)
+    const allFlashcards = await ctx.db.query('flashcards').collect();
+    return allFlashcards.filter(
+      (card) => card.tech?.toLowerCase() === args.tech.toLowerCase(),
+    );
+  },
+});
+
 // Get flashcards by technology for a specific user (due cards only)
 export const getFlashcardsByTechForUser = query({
   args: {
@@ -377,11 +477,28 @@ export const getFlashcardsByTechForUser = query({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Get all flashcards for the technology (case-insensitive)
-    const allFlashcards = await ctx.db.query('flashcards').collect();
-    const techFlashcards = allFlashcards.filter(
-      (card) => card.tech?.toLowerCase() === args.tech.toLowerCase(),
-    );
+    // Get flashcards for the technology (inline logic from getFlashcardsByTech)
+    let techFlashcards;
+    try {
+      techFlashcards = await ctx.db
+        .query('flashcards')
+        .withIndex('by_tech', (q) => q.eq('tech', args.tech))
+        .collect();
+      
+      if (techFlashcards.length === 0) {
+        // Index didn't match, filter manually
+        const allFlashcards = await ctx.db.query('flashcards').collect();
+        techFlashcards = allFlashcards.filter(
+          (card) => card.tech?.toLowerCase() === args.tech.toLowerCase(),
+        );
+      }
+    } catch (error) {
+      // Index might not exist yet, filter manually
+      const allFlashcards = await ctx.db.query('flashcards').collect();
+      techFlashcards = allFlashcards.filter(
+        (card) => card.tech?.toLowerCase() === args.tech.toLowerCase(),
+      );
+    }
 
     // Get user's progress for all flashcards
     const userProgress = await ctx.db
@@ -396,7 +513,7 @@ export const getFlashcardsByTechForUser = query({
     });
 
     // Filter flashcards that are due for review or haven't been studied yet
-    const dueTechFlashcards = techFlashcards.filter((flashcard) => {
+    const dueTechFlashcards = techFlashcards.filter((flashcard: Doc<'flashcards'>) => {
       const progress = progressMap.get(flashcard._id);
 
       if (!progress) {
@@ -409,7 +526,7 @@ export const getFlashcardsByTechForUser = query({
     });
 
     // Return flashcards with their progress data
-    return dueTechFlashcards.map((flashcard) => {
+    return dueTechFlashcards.map((flashcard: Doc<'flashcards'>) => {
       const progress = progressMap.get(flashcard._id);
       return {
         ...flashcard,

@@ -193,6 +193,7 @@ export function StudySession({
         ) as ConvexFlashcard[];
 
         const shuffled = shuffleArray(filtered).slice(0, MAX_CARDS); // Limit to 12
+
         setShuffledCards(shuffled);
         setSessionStats((prev) => ({ ...prev, total: shuffled.length }));
         setCardsLocked(true); // Lock the cards for this session
@@ -603,3 +604,4 @@ export function StudySession({
     </div>
   );
 }
+

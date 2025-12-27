@@ -1,0 +1,152 @@
+'use client';
+
+import { DeckCard } from '@/components/DeckCard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { api } from '@/convex/_generated/api';
+import { SignOutButton, useUser } from '@clerk/nextjs';
+import {
+  Authenticated,
+  Unauthenticated,
+  useQuery,
+} from 'convex/react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { User } from 'lucide-react';
+
+function RedirectToLogin() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+      <p className="text-slate-600">Please sign in to view the community.</p>
+    </div>
+  );
+}
+
+function CommunityContent() {
+  const { user } = useUser();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const decks = useQuery(api.decks.getPublicDecks, {
+    searchQuery: searchQuery || undefined,
+  });
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <nav className="bg-white shadow-sm border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Link href="/dashboard">
+                <Button
+                  variant="outline"
+                  className="text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  Dashboard
+                </Button>
+              </Link>
+              <Link href="/library">
+                <Button
+                  variant="outline"
+                  className="text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  Library
+                </Button>
+              </Link>
+              <Link href="/profile">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full p-2 h-9 w-9 flex items-center justify-center"
+                  title={user ? `Profile - ${user.firstName || user.emailAddresses[0]?.emailAddress}` : 'Profile'}
+                >
+                  <User className="h-4 w-4" />
+                </Button>
+              </Link>
+              <SignOutButton>
+                <button className="bg-red-600 text-white px-2 sm:px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-xs sm:text-sm">
+                  Sign Out
+                </button>
+              </SignOutButton>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+            Community Decks
+          </h2>
+          <p className="text-slate-600 text-base sm:text-lg mb-6">
+            Discover and upvote public flashcard decks created by the community.
+          </p>
+
+          {/* Search Input */}
+          <div className="max-w-md">
+            <Input
+              type="text"
+              placeholder="Search decks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
+          </div>
+        </div>
+
+        {/* Decks Grid */}
+        {decks === undefined ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-slate-600">Loading community decks...</p>
+            </div>
+          </div>
+        ) : decks.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-slate-600 text-lg mb-4">
+              {searchQuery
+                ? 'No decks found matching your search.'
+                : 'No public decks available yet. Be the first to create one!'}
+            </p>
+            {!searchQuery && (
+              <Link href="/dashboard">
+                <Button variant="outline">Go to Dashboard</Button>
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {decks.map((deck) => (
+              <DeckCard
+                key={deck._id}
+                deckId={deck._id}
+                name={deck.name}
+                description={deck.description}
+                upvoteCount={deck.upvoteCount}
+                cardCount={deck.cardCount}
+                createdBy={deck.createdBy}
+                userId={user?.id}
+              />
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default function CommunityPage() {
+  return (
+    <>
+      <Unauthenticated>
+        <RedirectToLogin />
+      </Unauthenticated>
+
+      <Authenticated>
+        <CommunityContent />
+      </Authenticated>
+    </>
+  );
+}
+

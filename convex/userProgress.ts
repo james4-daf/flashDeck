@@ -1,5 +1,6 @@
 // convex/userProgress.ts
 import { v } from 'convex/values';
+import { api } from './_generated/api';
 import { mutation, query } from './_generated/server';
 
 // Helper function to get date string in YYYY-MM-DD format
@@ -267,6 +268,11 @@ export const getStudyCounts = query({
     const now = new Date();
     const today = getDateString(now.getTime());
 
+    // Check subscription to determine history limit
+    const userIsPremium = await ctx.runQuery(api.subscriptions.isPremium, {
+      userId: args.userId,
+    });
+
     // Calculate date ranges
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
@@ -275,11 +281,25 @@ export const getStudyCounts = query({
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfMonthStr = getDateString(startOfMonth.getTime());
 
-    // Get all study logs for this user
-    const studyLogs = await ctx.db
+    // Calculate history cutoff date (30 days for free users)
+    const historyCutoffDate = new Date(now);
+    if (!userIsPremium) {
+      historyCutoffDate.setDate(now.getDate() - 30); // 30 days ago
+    } else {
+      historyCutoffDate.setTime(0); // All history for premium
+    }
+    const historyCutoffStr = getDateString(historyCutoffDate.getTime());
+
+    // Get study logs for this user
+    let studyLogs = await ctx.db
       .query('studyLog')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .collect();
+
+    // Filter by history limit for free users
+    if (!userIsPremium) {
+      studyLogs = studyLogs.filter((log) => log.date >= historyCutoffStr);
+    }
 
     // Calculate counts
     const daily =
@@ -311,6 +331,39 @@ export const markImportant = mutation({
     important: v.boolean(),
   },
   handler: async (ctx, args) => {
+      // Check subscription limits if marking as important
+      if (args.important) {
+        const userIsPremium = await ctx.runQuery(api.subscriptions.isPremium, {
+          userId: args.userId,
+        });
+
+      if (!userIsPremium) {
+        // Free users: Check important card limit (5 max)
+        const importantCards = await ctx.db
+          .query('userProgress')
+          .withIndex('by_user', (q) => q.eq('userId', args.userId))
+          .filter((q) => q.eq(q.field('important'), true))
+          .collect();
+
+        // Check if this card is already marked as important
+        const currentProgress = await ctx.db
+          .query('userProgress')
+          .withIndex('by_user_and_card', (q) =>
+            q.eq('userId', args.userId).eq('flashcardId', args.flashcardId),
+          )
+          .first();
+
+        const isAlreadyImportant = currentProgress?.important === true;
+
+        // If not already important and at limit, throw error
+        if (!isAlreadyImportant && importantCards.length >= 5) {
+          throw new Error(
+            'FREE_LIMIT_REACHED: You have reached your free important cards limit (5 cards). Upgrade to Premium to mark unlimited cards as important!',
+          );
+        }
+      }
+    }
+
     const progress = await ctx.db
       .query('userProgress')
       .withIndex('by_user_and_card', (q) =>

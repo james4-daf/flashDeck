@@ -1,0 +1,349 @@
+'use client';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SignOutButton, useUser } from '@clerk/nextjs';
+import { api } from '@/convex/_generated/api';
+import {
+  Authenticated,
+  Unauthenticated,
+  useMutation,
+  useQuery,
+} from 'convex/react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+export default function ProfilePage() {
+  return (
+    <>
+      <Unauthenticated>
+        <RedirectToLogin />
+      </Unauthenticated>
+
+      <Authenticated>
+        <ProfileContent />
+      </Authenticated>
+    </>
+  );
+}
+
+function RedirectToLogin() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.push('/');
+  }, [router]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+      <p className="text-slate-600">Not authenticated - redirecting to login...</p>
+    </div>
+  );
+}
+
+function ProfileContent() {
+  const { user } = useUser();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  // Get subscription status
+  const subscriptionStatus = useQuery(
+    api.subscriptions.getSubscriptionStatus,
+    user?.id ? { userId: user.id } : 'skip',
+  );
+
+  const cancelSubscription = useMutation(api.subscriptions.cancelSubscription);
+
+  const handleManageSubscription = async () => {
+    if (!user?.id || !subscriptionStatus?.stripeCustomerId) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          customerId: subscriptionStatus.stripeCustomerId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('No portal URL returned');
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error creating portal session:', error);
+      setLoading(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!user?.id) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.',
+    );
+
+    if (!confirmed) return;
+
+    setCancelling(true);
+    try {
+      await cancelSubscription({ userId: user.id });
+      alert('Subscription cancelled successfully. You will retain access until the end of your billing period.');
+      router.refresh();
+    } catch (error: any) {
+      console.error('Error cancelling subscription:', error);
+      alert('Failed to cancel subscription. Please try again or use the manage subscription button.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const formatDate = (timestamp?: number) => {
+    if (!timestamp) return 'N/A';
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const getStatusBadge = () => {
+    if (!subscriptionStatus) return null;
+
+    if (subscriptionStatus.isPremium && subscriptionStatus.isActive) {
+      return (
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+          ✓ Premium Active
+        </span>
+      );
+    } else if (subscriptionStatus.status === 'trial') {
+      return (
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+          Trial Active
+        </span>
+      );
+    } else if (subscriptionStatus.status === 'cancelled') {
+      return (
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+          Cancelled (Active until renewal)
+        </span>
+      );
+    } else {
+      return (
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-slate-100 text-slate-800">
+          Free
+        </span>
+      );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <nav className="bg-white shadow-sm border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Link href="/dashboard">
+                <Button
+                  variant="outline"
+                  className="text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  Dashboard
+                </Button>
+              </Link>
+              <Link href="/library">
+                <Button
+                  variant="outline"
+                  className="text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  Library
+                </Button>
+              </Link>
+              <SignOutButton>
+                <button className="bg-red-600 text-white px-2 sm:px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-xs sm:text-sm">
+                  Sign Out
+                </button>
+              </SignOutButton>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
+            Profile
+          </h1>
+          <p className="text-slate-600 text-base sm:text-lg">
+            Manage your account and subscription
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {/* User Info Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Name
+                </label>
+                <p className="text-slate-900 mt-1">
+                  {user?.firstName || user?.emailAddresses[0]?.emailAddress || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Email
+                </label>
+                <p className="text-slate-900 mt-1">
+                  {user?.emailAddresses[0]?.emailAddress || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  User ID
+                </label>
+                <p className="text-slate-500 text-sm mt-1 font-mono">
+                  {user?.id || 'N/A'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Subscription Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Subscription</CardTitle>
+                {getStatusBadge()}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {subscriptionStatus ? (
+                <>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">
+                      Plan
+                    </label>
+                    <p className="text-slate-900 mt-1 capitalize">
+                      {subscriptionStatus.plan}
+                    </p>
+                  </div>
+
+                  {subscriptionStatus.billingCycle && (
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">
+                        Billing Cycle
+                      </label>
+                      <p className="text-slate-900 mt-1 capitalize">
+                        {subscriptionStatus.billingCycle}
+                      </p>
+                    </div>
+                  )}
+
+                  {subscriptionStatus.subscriptionEndsAt && (
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">
+                        Renews On
+                      </label>
+                      <p className="text-slate-900 mt-1">
+                        {formatDate(subscriptionStatus.subscriptionEndsAt)}
+                        {subscriptionStatus.daysRemaining !== null && (
+                          <span className="ml-2 text-sm text-slate-500">
+                            ({subscriptionStatus.daysRemaining} days remaining)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+
+                  {subscriptionStatus.trialEndsAt && (
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">
+                        Trial Ends
+                      </label>
+                      <p className="text-slate-900 mt-1">
+                        {formatDate(subscriptionStatus.trialEndsAt)}
+                        {subscriptionStatus.trialDaysRemaining !== null && (
+                          <span className="ml-2 text-sm text-slate-500">
+                            ({subscriptionStatus.trialDaysRemaining} days remaining)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+
+                  {subscriptionStatus.status === 'cancelled' && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <p className="text-sm text-yellow-800">
+                        Your subscription has been cancelled. You will retain
+                        access to premium features until{' '}
+                        {formatDate(subscriptionStatus.subscriptionEndsAt)}.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+                    {subscriptionStatus.stripeCustomerId ? (
+                      <>
+                        <Button
+                          onClick={handleManageSubscription}
+                          disabled={loading}
+                          variant="outline"
+                          className="flex-1"
+                        >
+                          {loading
+                            ? 'Loading...'
+                            : 'Manage Subscription (Stripe Portal)'}
+                        </Button>
+                        {subscriptionStatus.isPremium &&
+                          subscriptionStatus.status !== 'cancelled' && (
+                            <Button
+                              onClick={handleCancelSubscription}
+                              disabled={cancelling}
+                              variant="outline"
+                              className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
+                            >
+                              {cancelling ? 'Cancelling...' : 'Cancel Subscription'}
+                            </Button>
+                          )}
+                      </>
+                    ) : (
+                      <Link href="/pricing" className="flex-1">
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                          Upgrade to Premium
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-slate-600">Loading subscription status...</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+}
+

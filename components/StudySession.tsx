@@ -212,6 +212,7 @@ export function StudySession({
     studyMode,
     listName,
     topicName,
+    cardsLocked,
   ]);
 
   const handleAnswer = async (isCorrect: boolean) => {
@@ -604,4 +605,3 @@ export function StudySession({
     </div>
   );
 }
-

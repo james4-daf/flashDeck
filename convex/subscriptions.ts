@@ -100,9 +100,9 @@ export const getSubscriptionStatus = query({
       .first();
 
     // If no subscription exists, use default free subscription
-    let sub = subscription;
-    if (!sub) {
-      sub = {
+    if (!subscription) {
+      const now = Date.now();
+      return {
         userId: args.userId,
         plan: 'free' as const,
         status: 'active' as const,
@@ -112,31 +112,35 @@ export const getSubscriptionStatus = query({
         stripeCustomerId: undefined,
         stripeSubscriptionId: undefined,
         stripePriceId: undefined,
+        isActive: false,
+        isPremium: false,
+        daysRemaining: null,
+        trialDaysRemaining: null,
       };
-    } else {
-      // Check if subscription is still valid (don't mutate in query, just compute status)
-      const now = Date.now();
-      if (sub.status === 'active' || sub.status === 'trial') {
-        // Check if trial has expired
-        if (sub.trialEndsAt && sub.trialEndsAt < now) {
-          sub = {
-            ...sub,
-            status: 'expired' as const,
-            plan: 'free' as const,
-          };
-        }
-        // Check if subscription has ended
-        else if (sub.subscriptionEndsAt && sub.subscriptionEndsAt < now) {
-          sub = {
-            ...sub,
-            status: 'expired' as const,
-            plan: 'free' as const,
-          };
-        }
+    }
+
+    // Check if subscription is still valid (don't mutate in query, just compute status)
+    let sub = subscription;
+    const now = Date.now();
+    if (sub.status === 'active' || sub.status === 'trial') {
+      // Check if trial has expired
+      if (sub.trialEndsAt && sub.trialEndsAt < now) {
+        sub = {
+          ...sub,
+          status: 'expired' as const,
+          plan: 'free' as const,
+        };
+      }
+      // Check if subscription has ended
+      else if (sub.subscriptionEndsAt && sub.subscriptionEndsAt < now) {
+        sub = {
+          ...sub,
+          status: 'expired' as const,
+          plan: 'free' as const,
+        };
       }
     }
 
-    const now = Date.now();
     const isActive =
       sub.plan === 'premium' &&
       (sub.status === 'active' || sub.status === 'trial') &&

@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 function RedirectToLogin() {
   const router = useRouter();
   useEffect(() => {
-    router.push('/');
+    router.push('/login');
   }, [router]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
@@ -220,7 +220,7 @@ function ProfileContent() {
                         )}
                       </>
                     ) : (
-                      <Link href="/pricing" className="flex-1">
+                      <Link href="/#pricing" className="flex-1">
                         <Button className="w-full bg-blue-600 hover:bg-blue-700">Upgrade to Premium</Button>
                       </Link>
                     )}

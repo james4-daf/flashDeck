@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-12-15.clover',
 });
 
 // Price IDs from Stripe dashboard (to be configured)
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pricing/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pricing?canceled=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/#pricing?canceled=true`,
       client_reference_id: userId,
       metadata: {
         userId,
@@ -65,10 +65,11 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating checkout session:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create checkout session';
     return NextResponse.json(
-      { error: error.message || 'Failed to create checkout session' },
+      { error: errorMessage },
       { status: 500 },
     );
   }

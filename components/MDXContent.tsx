@@ -1,5 +1,6 @@
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import Link from 'next/link';
+import React from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -9,21 +10,59 @@ interface MDXContentProps {
 
 const components = {
   code: ({ children, className }: { children: string; className?: string }) => {
-    const language = className?.replace('language-', '') || 'javascript';
+    // If className exists, it's a code block (from triple backticks)
+    // In this case, the pre component will handle it
+    if (className) {
+      // Return the code element as-is, pre component will handle SyntaxHighlighter
+      return <code className={className}>{children}</code>;
+    }
+    // Inline code - render as simple code element
     return (
-      <SyntaxHighlighter
-        language={language}
-        style={tomorrow}
-        className="rounded-lg my-4"
-        showLineNumbers
-      >
+      <code className="bg-slate-100 px-2 py-1 rounded text-sm font-mono text-slate-800">
         {children}
-      </SyntaxHighlighter>
+      </code>
     );
   },
-  pre: ({ children }: { children: React.ReactNode }) => (
-    <div className="my-4">{children}</div>
-  ),
+  pre: ({ children }: { children: React.ReactNode }) => {
+    // Extract code element and its className
+    // MDX wraps code blocks as <pre><code className="language-...">...</code></pre>
+    const childArray = React.Children.toArray(children);
+    const codeChild = childArray.find(
+      (child) =>
+        React.isValidElement(child) &&
+        (child.type === 'code' ||
+          (typeof child.type === 'string' && child.type === 'code'))
+    ) as React.ReactElement<{ className?: string; children?: React.ReactNode }> | undefined;
+
+    if (codeChild?.props?.className) {
+      const language =
+        codeChild.props.className.replace('language-', '') || 'javascript';
+      const codeContent = String(codeChild.props.children || '').replace(
+        /\n$/,
+        ''
+      );
+
+      return (
+        <div className="my-4">
+          <SyntaxHighlighter
+            language={language}
+            style={tomorrow}
+            className="rounded-lg"
+            showLineNumbers
+            PreTag="div"
+          >
+            {codeContent}
+          </SyntaxHighlighter>
+        </div>
+      );
+    }
+    // Fallback for regular pre elements
+    return (
+      <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto my-4">
+        {children}
+      </pre>
+    );
+  },
   Tip: ({ children }: { children: React.ReactNode }) => (
     <div className="bg-green-50 border border-green-200 rounded-lg p-4 my-6">
       <div className="flex items-start">

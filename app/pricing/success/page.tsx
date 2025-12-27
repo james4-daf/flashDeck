@@ -3,12 +3,9 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function PricingSuccessPage() {
-  const searchParams = useSearchParams();
-  const sessionId = searchParams.get('session_id');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,4 +53,3 @@ export default function PricingSuccessPage() {
     </div>
   );
 }
-

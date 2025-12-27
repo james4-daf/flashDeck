@@ -1,7 +1,6 @@
 'use client';
 
 import { StudySession } from '@/components/StudySession';
-import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { UpgradeModal } from '@/components/UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +36,7 @@ function RedirectToLogin() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/');
+    router.push('/login');
   }, [router]);
 
   return (
@@ -63,10 +62,6 @@ function DashboardContent() {
   // Check subscription status
   const isPremium = useQuery(
     api.subscriptions.isPremium,
-    user?.id ? { userId: user.id } : 'skip',
-  );
-  const featureAccess = useQuery(
-    api.subscriptions.getFeatureAccess,
     user?.id ? { userId: user.id } : 'skip',
   );
 

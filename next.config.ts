@@ -1,17 +1,13 @@
 import createMDX from '@next/mdx';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeRaw from 'rehype-raw';
-import remarkGfm from 'remark-gfm';
+import type { NextConfig } from 'next';
 
 const withMDX = createMDX({
   extension: /\.mdx?$/,
-  options: {
-    remarkPlugins: [remarkGfm],
-    rehypePlugins: [rehypeRaw, rehypeHighlight],
-  },
+  // No options needed since MDX files are processed via next-mdx-remote
+  // This avoids serialization issues with Turbopack
 });
 
-const nextConfig = {
+const nextConfig: NextConfig = {
   pageExtensions: ['js', 'jsx', 'mdx', 'ts', 'tsx'],
 };
 

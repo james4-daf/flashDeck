@@ -12,7 +12,7 @@ export const createDeck = mutation({
     createdBy: v.string(),
     isPublic: v.boolean(),
   },
-  handler: async (ctx, args): Promise<string> => {
+  handler: async (ctx, args): Promise<Id<'decks'>> => {
     // Check subscription limits
     const userIsPremium: boolean = await ctx.runQuery(
       api.subscriptions.isPremium,

@@ -5,43 +5,18 @@ import { DeckCreationDialog } from '@/components/DeckCreationDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { useUser } from '@clerk/nextjs';
-import {
-  Authenticated,
-  Unauthenticated,
-  useMutation,
-  useQuery,
-} from 'convex/react';
-import Link from 'next/link';
+import { Authenticated, useMutation, useQuery } from 'convex/react';
+import { Eye, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { Plus, Trash2, Edit, Eye } from 'lucide-react';
+import { useState } from 'react';
 
 export default function MyDecksPage() {
   return (
-    <>
-      <Unauthenticated>
-        <RedirectToLogin />
-      </Unauthenticated>
-
-      <Authenticated>
-        <MyDecksContent />
-      </Authenticated>
-    </>
-  );
-}
-
-function RedirectToLogin() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.push('/login');
-  }, [router]);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-      <p className="text-slate-600">Not authenticated - redirecting to login...</p>
-    </div>
+    <Authenticated>
+      <MyDecksContent />
+    </Authenticated>
   );
 }
 
@@ -56,15 +31,19 @@ function MyDecksContent() {
   );
   const deleteDeck = useMutation(api.decks.deleteDeck);
 
-  const handleDeckCreated = (deckId: string) => {
+  const handleDeckCreated = (deckId: Id<'decks'>) => {
     router.push(`/my-decks/${deckId}`);
   };
 
-  const handleDeleteDeck = async (deckId: string, e: React.MouseEvent) => {
+  const handleDeleteDeck = async (deckId: Id<'decks'>, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!confirm('Are you sure you want to delete this deck? This action cannot be undone.')) {
+    if (
+      !confirm(
+        'Are you sure you want to delete this deck? This action cannot be undone.',
+      )
+    ) {
       return;
     }
 
@@ -136,7 +115,9 @@ function MyDecksContent() {
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <CardTitle className="text-xl mb-2">{deck.name}</CardTitle>
+                      <CardTitle className="text-xl mb-2">
+                        {deck.name}
+                      </CardTitle>
                       {deck.description && (
                         <p className="text-slate-600 text-sm line-clamp-2">
                           {deck.description}
@@ -199,4 +180,3 @@ function MyDecksContent() {
     </div>
   );
 }
-

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { useUser } from '@clerk/nextjs';
 import { useMutation, useQuery } from 'convex/react';
 import { useState } from 'react';
@@ -19,7 +20,7 @@ import { UpgradeModal } from './UpgradeModal';
 interface DeckCreationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onDeckCreated?: (deckId: string) => void;
+  onDeckCreated?: (deckId: Id<'decks'>) => void;
 }
 
 export function DeckCreationDialog({
@@ -66,8 +67,8 @@ export function DeckCreationDialog({
       if (onDeckCreated) {
         onDeckCreated(deckId);
       }
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Failed to create deck';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create deck';
       setError(errorMessage);
 
       // If it's a limit error, show upgrade modal

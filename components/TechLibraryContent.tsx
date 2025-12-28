@@ -6,21 +6,21 @@ import { StudySession } from '@/components/StudySession';
 import { Accordion } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser } from '@clerk/nextjs';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { Doc } from '@/convex/_generated/dataModel';
+import { useUser } from '@clerk/nextjs';
+import { useState } from 'react';
 
 interface TechLibraryContentProps {
   tech: string;
   flashcards: Doc<'flashcards'>[];
 }
 
-export function TechLibraryContent({ tech, flashcards }: TechLibraryContentProps) {
+export function TechLibraryContent({
+  tech,
+  flashcards,
+}: TechLibraryContentProps) {
   const { user } = useUser();
   const [isStudying, setIsStudying] = useState(false);
-  const router = useRouter();
 
   const handleStartStudying = () => {
     setIsStudying(true);
@@ -125,4 +125,3 @@ export function TechLibraryContent({ tech, flashcards }: TechLibraryContentProps
     </>
   );
 }
-

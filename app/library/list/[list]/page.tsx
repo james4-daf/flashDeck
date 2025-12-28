@@ -9,15 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
 import { useQuery } from 'convex/react';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
 export default function ListLibraryPage() {
   const params = useParams();
   const list = params?.list as string;
   const { user } = useUser();
-  const router = useRouter();
   const [isStudying, setIsStudying] = useState(false);
 
   // Fetch flashcards for this list

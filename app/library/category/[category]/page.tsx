@@ -9,17 +9,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
 import { useQuery } from 'convex/react';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
 export default function CategoryLibraryPage() {
   const { user } = useUser();
   const [isStudying, setIsStudying] = useState(false);
   const params = useParams();
-  const router = useRouter();
   const categoryName = decodeURIComponent(params?.category as string);
-  
+
   const flashcards = useQuery(
     api.flashcards.getFlashcardsByCategory,
     categoryName ? { category: categoryName } : 'skip',
@@ -140,4 +138,3 @@ export default function CategoryLibraryPage() {
     </div>
   );
 }
-

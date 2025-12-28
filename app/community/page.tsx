@@ -6,17 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
-import { Authenticated, Unauthenticated, useQuery } from 'convex/react';
+import { Authenticated, useQuery } from 'convex/react';
 import Link from 'next/link';
 import { useState } from 'react';
-
-function RedirectToLogin() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-      <p className="text-slate-600">Please sign in to view the community.</p>
-    </div>
-  );
-}
 
 function CommunityContent() {
   const { user } = useUser();
@@ -95,14 +87,8 @@ function CommunityContent() {
 
 export default function CommunityPage() {
   return (
-    <>
-      <Unauthenticated>
-        <RedirectToLogin />
-      </Unauthenticated>
-
-      <Authenticated>
-        <CommunityContent />
-      </Authenticated>
-    </>
+    <Authenticated>
+      <CommunityContent />
+    </Authenticated>
   );
 }

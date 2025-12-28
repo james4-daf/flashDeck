@@ -7,15 +7,13 @@ import { Accordion } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { useUser } from '@clerk/nextjs';
 import { useMutation, useQuery } from 'convex/react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function ImportantListPage() {
   const { user } = useUser();
-  const router = useRouter();
   const [isStudying, setIsStudying] = useState(false);
 
   // Fetch important flashcards
@@ -40,7 +38,7 @@ export default function ImportantListPage() {
   };
 
   const handleToggleImportant = async (
-    flashcardId: any, // Id<'flashcards'> type from Convex
+    flashcardId: Id<'flashcards'>,
     currentImportant: boolean,
   ) => {
     if (!user?.id) return;
@@ -51,10 +49,15 @@ export default function ImportantListPage() {
         flashcardId: flashcardId,
         important: !currentImportant,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Check if it's the free limit error
-      if (error?.message?.includes('FREE_LIMIT_REACHED')) {
-        alert('You have reached your free important cards limit (5 cards). Upgrade to Premium to mark unlimited cards as important!');
+      if (
+        error instanceof Error &&
+        error.message?.includes('FREE_LIMIT_REACHED')
+      ) {
+        alert(
+          'You have reached your free important cards limit (5 cards). Upgrade to Premium to mark unlimited cards as important!',
+        );
       } else {
         console.error('Error toggling important status:', error);
         alert('Failed to update important status. Please try again.');
@@ -147,7 +150,8 @@ export default function ImportantListPage() {
                   </span>
                 </CardTitle>
                 <p className="text-xs sm:text-sm text-slate-600 mt-2">
-                  Manage your important flashcards. Click on any flashcard to view details, or unmark it as important.
+                  Manage your important flashcards. Click on any flashcard to
+                  view details, or unmark it as important.
                 </p>
               </div>
               {total > 0 && (
@@ -183,10 +187,11 @@ export default function ImportantListPage() {
             {importantFlashcards.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-slate-500 text-sm sm:text-base mb-4">
-                  You haven't marked any flashcards as important yet.
+                  You haven&apos;t marked any flashcards as important yet.
                 </p>
                 <p className="text-xs sm:text-sm text-slate-400">
-                  Mark flashcards as important while studying to add them to this list.
+                  Mark flashcards as important while studying to add them to
+                  this list.
                 </p>
               </div>
             ) : (
@@ -211,7 +216,9 @@ export default function ImportantListPage() {
                       }}
                       showImportantToggle={true}
                       isImportant={isImportant}
-                      onToggleImportant={() => handleToggleImportant(card._id, isImportant)}
+                      onToggleImportant={() =>
+                        handleToggleImportant(card._id, isImportant)
+                      }
                     />
                   );
                 })}
@@ -223,4 +230,3 @@ export default function ImportantListPage() {
     </div>
   );
 }
-

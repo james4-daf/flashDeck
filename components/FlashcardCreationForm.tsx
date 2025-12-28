@@ -166,8 +166,8 @@ export function FlashcardCreationForm({
       if (onFlashcardCreated) {
         onFlashcardCreated();
       }
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Failed to create flashcard';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create flashcard';
       setError(errorMessage);
 
       // If it's a limit error, show upgrade modal

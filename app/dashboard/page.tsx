@@ -7,43 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
-import {
-  Authenticated,
-  Unauthenticated,
-  useMutation,
-  useQuery,
-} from 'convex/react';
+import { Authenticated, useMutation, useQuery } from 'convex/react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export default function Dashboard() {
   return (
-    <>
-      <Unauthenticated>
-        <RedirectToLogin />
-      </Unauthenticated>
-
-      <Authenticated>
-        <DashboardContent />
-      </Authenticated>
-    </>
-  );
-}
-
-function RedirectToLogin() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.push('/login');
-  }, [router]);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-      <p className="text-slate-600">
-        Not authenticated - redirecting to login...
-      </p>
-    </div>
+    <Authenticated>
+      <DashboardContent />
+    </Authenticated>
   );
 }
 

@@ -5,53 +5,26 @@ import { FlashcardCreationForm } from '@/components/FlashcardCreationForm';
 import { LibraryFlashcard } from '@/components/LibraryFlashcard';
 import { StudySession } from '@/components/StudySession';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useUser } from '@clerk/nextjs';
-import {
-  Authenticated,
-  Unauthenticated,
-  useMutation,
-  useQuery,
-} from 'convex/react';
+import { Authenticated, useMutation, useQuery } from 'convex/react';
+import { ArrowLeft, BookOpen, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { Plus, Trash2, ArrowLeft, BookOpen } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { useState } from 'react';
 
 export default function DeckDetailPage() {
   return (
-    <>
-      <Unauthenticated>
-        <RedirectToLogin />
-      </Unauthenticated>
-
-      <Authenticated>
-        <DeckDetailContent />
-      </Authenticated>
-    </>
-  );
-}
-
-function RedirectToLogin() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.push('/login');
-  }, [router]);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-      <p className="text-slate-600">Not authenticated - redirecting to login...</p>
-    </div>
+    <Authenticated>
+      <DeckDetailContent />
+    </Authenticated>
   );
 }
 
 function DeckDetailContent() {
   const { user } = useUser();
   const params = useParams();
-  const router = useRouter();
   const deckId = params?.deckId as Id<'decks'>;
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isStudying, setIsStudying] = useState(false);
@@ -137,7 +110,7 @@ function DeckDetailContent() {
               Access Denied
             </h2>
             <p className="text-slate-600 mb-4">
-              You don't have permission to view this deck.
+              You don&apos;t have permission to view this deck.
             </p>
             <Link href="/my-decks">
               <Button variant="outline">Back to My Decks</Button>
@@ -228,10 +201,7 @@ function DeckDetailContent() {
                   Study Deck
                 </Button>
               )}
-              <Button
-                onClick={() => setShowCreateForm(true)}
-                variant="outline"
-              >
+              <Button onClick={() => setShowCreateForm(true)} variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Flashcard
               </Button>
@@ -292,4 +262,3 @@ function DeckDetailContent() {
     </div>
   );
 }
-

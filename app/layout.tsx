@@ -2,10 +2,10 @@ import ConvexClientProvider from '@/app/ConvexClientProvider';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
-import { Fredoka } from 'next/font/google';
+import { Rubik } from 'next/font/google';
 import './globals.css';
 
-const fredoka = Fredoka({
+const rubik = Rubik({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
@@ -91,7 +91,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`antialiased ${fredoka.className}`}>
+      <body className={`antialiased ${rubik.className}`}>
         <ClerkProvider>
           <ConvexClientProvider>{children}</ConvexClientProvider>
         </ClerkProvider>

@@ -2,13 +2,13 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Authenticated, AuthLoading, Unauthenticated } from 'convex/react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { BookOpen, Zap, Target, CheckCircle2, ArrowRight } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
 import { calculateSavings } from '@/lib/subscription';
+import { useUser } from '@clerk/nextjs';
+import { Authenticated, AuthLoading, Unauthenticated } from 'convex/react';
+import { ArrowRight, BookOpen, CheckCircle2, Target, Zap } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 export default function LandingPage() {
   return (
@@ -48,6 +48,42 @@ function RedirectToDashboard() {
 }
 
 function LandingContent() {
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [visibleCards, setVisibleCards] = useState<boolean[]>([]);
+
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+
+    cardRefs.current.forEach((card, index) => {
+      if (!card) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setVisibleCards((prev) => {
+                const newVisible = [...prev];
+                newVisible[index] = true;
+                return newVisible;
+              });
+            }
+          });
+        },
+        {
+          threshold: 0.1,
+          rootMargin: '0px 0px -50px 0px',
+        },
+      );
+
+      observer.observe(card);
+      observers.push(observer);
+    });
+
+    return () => {
+      observers.forEach((observer) => observer.disconnect());
+    };
+  }, []);
+
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
@@ -95,7 +131,9 @@ function LandingContent() {
                 <Button variant="ghost">Pricing</Button>
               </a>
               <Link href="/login">
-                <Button>Get Started</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  Get Started
+                </Button>
               </Link>
             </div>
           </div>
@@ -112,20 +150,19 @@ function LandingContent() {
           </h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
             Learn React, JavaScript, and CSS concepts faster with science-backed
-            spaced repetition. Build lasting knowledge, not just short-term memory.
+            spaced repetition. Build lasting knowledge, not just short-term
+            memory.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login">
-              <Button size="lg" className="text-lg px-8 py-6">
+              <Button
+                size="lg"
+                className="text-lg px-8 py-6 bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 Start Learning Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <a href="#pricing">
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6">
-                View Pricing
-              </Button>
-            </a>
           </div>
           <p className="text-sm text-slate-500 mt-4">
             Free forever • No credit card required
@@ -140,12 +177,20 @@ function LandingContent() {
             Why FlashDeck Works
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Built on proven learning science to help you retain knowledge long-term
+            Built on proven learning science to help you retain knowledge
+            long-term
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          <Card className="border-2 border-transparent hover:border-blue-200 transition-colors">
+          <Card
+            ref={(el) => (cardRefs.current[0] = el)}
+            className={`border-2 border-transparent hover:border-blue-200 transition-all duration-500 ${
+              visibleCards[0]
+                ? 'shadow-lg shadow-blue-200/50 scale-100 opacity-100'
+                : 'shadow-none scale-95 opacity-0'
+            }`}
+          >
             <CardContent className="pt-6">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                 <Zap className="h-6 w-6 text-blue-600" />
@@ -160,7 +205,17 @@ function LandingContent() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-transparent hover:border-blue-200 transition-colors">
+          <Card
+            ref={(el) => (cardRefs.current[1] = el)}
+            style={{
+              transitionDelay: visibleCards[1] ? '100ms' : '0ms',
+            }}
+            className={`border-2 border-transparent hover:border-blue-200 transition-all duration-500 ${
+              visibleCards[1]
+                ? 'shadow-lg shadow-blue-200/50 scale-100 opacity-100'
+                : 'shadow-none scale-95 opacity-0'
+            }`}
+          >
             <CardContent className="pt-6">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                 <BookOpen className="h-6 w-6 text-blue-600" />
@@ -169,13 +224,24 @@ function LandingContent() {
                 Curated Content
               </h3>
               <p className="text-slate-600">
-                Learn from expertly crafted flashcards covering React, JavaScript,
-                CSS, and advanced topics. No need to create your own.
+                Learn from expertly crafted flashcards covering React,
+                JavaScript, CSS, and advanced topics. No need to create your
+                own.
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-transparent hover:border-blue-200 transition-colors">
+          <Card
+            ref={(el) => (cardRefs.current[2] = el)}
+            style={{
+              transitionDelay: visibleCards[2] ? '200ms' : '0ms',
+            }}
+            className={`border-2 border-transparent hover:border-blue-200 transition-all duration-500 ${
+              visibleCards[2]
+                ? 'shadow-lg shadow-blue-200/50 scale-100 opacity-100'
+                : 'shadow-none scale-95 opacity-0'
+            }`}
+          >
             <CardContent className="pt-6">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                 <Target className="h-6 w-6 text-blue-600" />
@@ -184,8 +250,8 @@ function LandingContent() {
                 Track Progress
               </h3>
               <p className="text-slate-600">
-                See your mastery grow over time. Real-time stats show what you&apos;ve
-                learned and what needs review.
+                See your mastery grow over time. Real-time stats show what
+                you&apos;ve learned and what needs review.
               </p>
             </CardContent>
           </Card>
@@ -207,12 +273,17 @@ function LandingContent() {
           <Card className="text-center">
             <CardContent className="pt-6">
               <div className="text-3xl mb-2">⚛️</div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-2">React</h3>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                React
+              </h3>
               <p className="text-slate-600 text-sm mb-4">
                 Master React hooks, components, and patterns
               </p>
               <Link href="/login">
-                <Button variant="outline" size="sm" className="w-full">
+                <Button
+                  size="sm"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
                   Start Learning
                 </Button>
               </Link>
@@ -229,7 +300,10 @@ function LandingContent() {
                 Deep dive into JavaScript fundamentals
               </p>
               <Link href="/login">
-                <Button variant="outline" size="sm" className="w-full">
+                <Button
+                  size="sm"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
                   Start Learning
                 </Button>
               </Link>
@@ -244,7 +318,10 @@ function LandingContent() {
                 Learn modern CSS techniques and layouts
               </p>
               <Link href="/login">
-                <Button variant="outline" size="sm" className="w-full">
+                <Button
+                  size="sm"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
                   Start Learning
                 </Button>
               </Link>
@@ -273,8 +350,8 @@ function LandingContent() {
                   20+ Premium Topics
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Advanced React, Next.js, TypeScript, JavaScript Under the Hood,
-                  and more
+                  Advanced React, Next.js, TypeScript, JavaScript Under the
+                  Hood, and more
                 </p>
               </div>
             </div>
@@ -310,7 +387,8 @@ function LandingContent() {
                   Public Deck Sharing
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Share your decks with the community and discover others&apos; work
+                  Share your decks with the community and discover others&apos;
+                  work
                 </p>
               </div>
             </div>
@@ -318,7 +396,10 @@ function LandingContent() {
 
           <div className="text-center">
             <a href="#pricing">
-              <Button size="lg" className="text-lg px-8 py-6">
+              <Button
+                size="lg"
+                className="text-lg px-8 py-6 bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 View Premium Plans
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -328,7 +409,10 @@ function LandingContent() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+      <section
+        id="pricing"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24"
+      >
         <PricingSection />
       </section>
 
@@ -343,7 +427,10 @@ function LandingContent() {
             Start learning free today.
           </p>
           <Link href="/login">
-            <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
+            <Button
+              size="lg"
+              className="text-lg px-8 py-6 bg-white hover:bg-slate-100 text-blue-600"
+            >
               Get Started Free
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -362,10 +449,16 @@ function LandingContent() {
               © {new Date().getFullYear()} FlashDeck. All rights reserved.
             </div>
             <div className="flex gap-6">
-              <a href="#pricing" className="text-slate-600 hover:text-slate-900 text-sm">
+              <a
+                href="#pricing"
+                className="text-slate-600 hover:text-slate-900 text-sm"
+              >
                 Pricing
               </a>
-              <Link href="/login" className="text-slate-600 hover:text-slate-900 text-sm">
+              <Link
+                href="/login"
+                className="text-slate-600 hover:text-slate-900 text-sm"
+              >
                 Login
               </Link>
             </div>
@@ -428,8 +521,8 @@ function PricingSection() {
           Choose Your Plan
         </h2>
         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Master JavaScript and React theory with spaced repetition. Start
-          free, upgrade when you&apos;re ready.
+          Master JavaScript and React theory with spaced repetition. Start free,
+          upgrade when you&apos;re ready.
         </p>
       </div>
 
@@ -465,144 +558,139 @@ function PricingSection() {
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        {/* Free Plan */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Free</CardTitle>
-            <div className="mt-4">
-              <span className="text-4xl font-bold">$0</span>
-              <span className="text-slate-600">/forever</span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                <span>5 pre-loaded topics</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                <span>1 user-created deck</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                <span>12 cards max per deck</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                <span>Basic flashcard types</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                <span>5 important cards</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                <span>30 days progress history</span>
-              </li>
-            </ul>
-            {user ? (
-              <Link href="/dashboard">
-                <Button variant="outline" className="w-full">
-                  Current Plan
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/login">
-                <Button variant="outline" className="w-full">
-                  Get Started
-                </Button>
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Premium Plan */}
-        <Card className="border-2 border-blue-500 relative">
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-            <span className="bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-medium">
-              Most Popular
-            </span>
-          </div>
-          <CardHeader>
-            <CardTitle className="text-2xl">Premium</CardTitle>
-            <div className="mt-4">
-              <span className="text-4xl font-bold">
-                ${selectedPlan === 'annual' ? annualPrice : monthlyPrice}
-              </span>
-              <span className="text-slate-600">
-                /{selectedPlan === 'annual' ? 'year' : 'month'}
-              </span>
-              {selectedPlan === 'annual' && (
-                <p className="text-sm text-slate-600 mt-1">
-                  ${(annualPrice / 12).toFixed(2)}/month billed annually
-                </p>
+      <div className="relative max-w-4xl mx-auto">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-0 items-start lg:items-start">
+          {/* Free Plan */}
+          <Card className="w-full lg:w-[48%] lg:z-10 bg-white shadow-lg px-[38px]">
+            <CardHeader>
+              <CardTitle className="text-2xl text-blue-600">Free</CardTitle>
+              <div className="mt-4">
+                <span className="text-4xl font-bold text-slate-900">$0</span>
+                <span className="text-slate-600">/forever</span>
+              </div>
+              <p className="text-slate-600 mt-2 text-sm">
+                Start learning JavaScript theory right now.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-0.5">✓</span>
+                  <span>5 pre-loaded topics</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-0.5">✓</span>
+                  <span>1 user-created deck</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-0.5">✓</span>
+                  <span>12 cards max per deck</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-0.5">✓</span>
+                  <span>Basic flashcard types</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-0.5">✓</span>
+                  <span>5 important cards</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-0.5">✓</span>
+                  <span>30 days progress history</span>
+                </li>
+              </ul>
+              {user ? (
+                <Link href="/dashboard">
+                  <Button variant="outline" className="w-full">
+                    Current Plan
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/login">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                    Get Started
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Premium Plan */}
+          <Card className="w-full lg:w-[52%] lg:-ml-8 lg:-mt-2 lg:mb-2 lg:z-20 relative bg-slate-900 text-white border-slate-800 shadow-xl">
+            <div className="absolute top-4 right-4">
+              <span className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs font-medium">
+                Most Popular
+              </span>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
-                <span>
-                  <strong>20+ premium topics</strong> (JavaScript Under the
-                  Hood, Advanced React, Next.js, TypeScript, and more)
+            <CardHeader className="pb-0">
+              <CardTitle className="text-2xl text-white">Premium</CardTitle>
+              <div className="mt-4">
+                <span className="text-4xl font-bold text-white">
+                  ${selectedPlan === 'annual' ? annualPrice : monthlyPrice}
                 </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
-                <span>
-                  <strong>Unlimited</strong> user-created decks
+                <span className="text-slate-300">
+                  /{selectedPlan === 'annual' ? 'year' : 'month'}
                 </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
-                <span>
-                  <strong>Unlimited</strong> cards per deck
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
-                <span>
-                  <strong>Unlimited</strong> cards per session
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
-                <span>Code snippet & fill-in-the-blank flashcards</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
-                <span>
-                  <strong>Unlimited</strong> important cards
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
-                <span>Public deck sharing</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
-                <span>
-                  <strong>Unlimited</strong> progress history
-                </span>
-              </li>
-            </ul>
-            <Button
-              onClick={() => handleCheckout(selectedPlan)}
-              disabled={!!loading}
-              className="w-full bg-blue-600 py-6 text-lg hover:bg-blue-700"
-            >
-              {loading === selectedPlan
-                ? 'Processing...'
-                : `Upgrade to Premium`}
-            </Button>
-            <p className="text-center text-xs text-slate-500">
-              Secure payment powered by Stripe. Cancel anytime.
-            </p>
-          </CardContent>
-        </Card>
+              </div>
+              <p className="text-slate-300 mt-3 text-sm">
+                Master JavaScript theory at maximum speed.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-5 pt-0">
+              <ul className="space-y-4 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">✓</span>
+                  <span>
+                    <strong>Unlimited</strong> user-created decks
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">✓</span>
+                  <span>
+                    <strong>Unlimited</strong> cards per deck
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">✓</span>
+                  <span>
+                    <strong>Unlimited</strong> cards per session
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">✓</span>
+                  <span>
+                    <strong>Unlimited</strong> important cards
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">✓</span>
+                  <span>Public deck sharing</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">✓</span>
+                  <span>
+                    <strong>Unlimited</strong> progress history
+                  </span>
+                </li>
+              </ul>
+              <div className="pt-2">
+                <Button
+                  onClick={() => handleCheckout(selectedPlan)}
+                  disabled={!!loading}
+                  className="w-full bg-blue-600 py-6 text-lg hover:bg-blue-700 text-white"
+                >
+                  {loading === selectedPlan ? 'Processing...' : `Get Started`}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <p className="text-center text-xs text-slate-400 mt-3">
+                  Secure payment powered by Stripe. Cancel anytime.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* FAQ Section */}
@@ -625,8 +713,8 @@ function PricingSection() {
               What happens to my data if I cancel?
             </h4>
             <p className="text-slate-600 text-sm">
-              Your data is always safe. If you cancel, you&apos;ll keep access to
-              free features and can upgrade again anytime to restore premium
+              Your data is always safe. If you cancel, you&apos;ll keep access
+              to free features and can upgrade again anytime to restore premium
               access.
             </p>
           </div>
@@ -635,8 +723,8 @@ function PricingSection() {
               Do you offer refunds?
             </h4>
             <p className="text-slate-600 text-sm">
-              We offer a 30-day money-back guarantee. If you&apos;re not satisfied,
-              contact us for a full refund.
+              We offer a 30-day money-back guarantee. If you&apos;re not
+              satisfied, contact us for a full refund.
             </p>
           </div>
         </div>

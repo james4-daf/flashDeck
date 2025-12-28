@@ -184,7 +184,9 @@ function LandingContent() {
 
         <div className="grid md:grid-cols-3 gap-8">
           <Card
-            ref={(el) => (cardRefs.current[0] = el)}
+            ref={(el) => {
+              cardRefs.current[0] = el;
+            }}
             className={`border-2 border-transparent hover:border-blue-200 transition-all duration-500 ${
               visibleCards[0]
                 ? 'shadow-lg shadow-blue-200/50 scale-100 opacity-100'
@@ -206,7 +208,9 @@ function LandingContent() {
           </Card>
 
           <Card
-            ref={(el) => (cardRefs.current[1] = el)}
+            ref={(el) => {
+              cardRefs.current[1] = el;
+            }}
             style={{
               transitionDelay: visibleCards[1] ? '100ms' : '0ms',
             }}
@@ -232,7 +236,9 @@ function LandingContent() {
           </Card>
 
           <Card
-            ref={(el) => (cardRefs.current[2] = el)}
+            ref={(el) => {
+              cardRefs.current[2] = el;
+            }}
             style={{
               transitionDelay: visibleCards[2] ? '200ms' : '0ms',
             }}

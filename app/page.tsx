@@ -6,6 +6,7 @@ import { calculateSavings } from '@/lib/subscription';
 import { useUser } from '@clerk/nextjs';
 import { Authenticated, AuthLoading, Unauthenticated } from 'convex/react';
 import { ArrowRight, BookOpen, CheckCircle2, Target, Zap } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -123,8 +124,15 @@ function LandingContent() {
       <nav className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/" className="text-2xl font-bold text-slate-900">
-              FlashDeck
+            <Link href="/" className="flex items-center gap-2">
+              <Image
+                src="/flashdeckLogo.png"
+                alt="FlashDeck"
+                width={120}
+                height={40}
+                className="h-8 w-auto"
+              />
+              <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
             </Link>
             <div className="flex items-center gap-4">
               <a href="#pricing">
@@ -173,9 +181,18 @@ function LandingContent() {
       {/* Features Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-            Why FlashDeck Works
-          </h2>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Image
+              src="/flashdeckLogo.png"
+              alt="FlashDeck"
+              width={60}
+              height={20}
+              className="h-10 w-auto"
+            />
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">
+              Why FlashDeck Works
+            </h2>
+          </div>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             Built on proven learning science to help you retain knowledge
             long-term

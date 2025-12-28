@@ -1,18 +1,14 @@
 'use client';
 
+import { AppHeader } from '@/components/AppHeader';
 import { DeckCard } from '@/components/DeckCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/convex/_generated/api';
-import { SignOutButton, useUser } from '@clerk/nextjs';
-import {
-  Authenticated,
-  Unauthenticated,
-  useQuery,
-} from 'convex/react';
+import { useUser } from '@clerk/nextjs';
+import { Authenticated, Unauthenticated, useQuery } from 'convex/react';
 import Link from 'next/link';
 import { useState } from 'react';
-import { User } from 'lucide-react';
 
 function RedirectToLogin() {
   return (
@@ -32,46 +28,7 @@ function CommunityContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <nav className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Link href="/dashboard">
-                <Button
-                  variant="outline"
-                  className="text-xs sm:text-sm px-2 sm:px-3"
-                >
-                  Dashboard
-                </Button>
-              </Link>
-              <Link href="/library">
-                <Button
-                  variant="outline"
-                  className="text-xs sm:text-sm px-2 sm:px-3"
-                >
-                  Library
-                </Button>
-              </Link>
-              <Link href="/profile">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full p-2 h-9 w-9 flex items-center justify-center"
-                  title={user ? `Profile - ${user.firstName || user.emailAddresses[0]?.emailAddress}` : 'Profile'}
-                >
-                  <User className="h-4 w-4" />
-                </Button>
-              </Link>
-              <SignOutButton>
-                <button className="bg-red-600 text-white px-2 sm:px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-xs sm:text-sm">
-                  Sign Out
-                </button>
-              </SignOutButton>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
         <div className="mb-6 sm:mb-8">
@@ -149,4 +106,3 @@ export default function CommunityPage() {
     </>
   );
 }
-

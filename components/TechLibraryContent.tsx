@@ -1,11 +1,13 @@
 'use client';
 
+import { AppHeader } from '@/components/AppHeader';
 import { LibraryFlashcard } from '@/components/LibraryFlashcard';
 import { StudySession } from '@/components/StudySession';
 import { Accordion } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser } from '@clerk/nextjs';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { Doc } from '@/convex/_generated/dataModel';
@@ -32,10 +34,10 @@ export function TechLibraryContent({ tech, flashcards }: TechLibraryContentProps
   if (isStudying) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <nav className="bg-white shadow-sm border-b border-slate-200">
+        <AppHeader />
+        <div className="bg-white border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
+            <div className="flex justify-end items-center h-12">
               <div className="flex items-center gap-2 sm:gap-4">
                 <span className="hidden sm:inline text-sm text-slate-600">
                   📚 Studying {tech} Topic
@@ -50,7 +52,7 @@ export function TechLibraryContent({ tech, flashcards }: TechLibraryContentProps
               </div>
             </div>
           </div>
-        </nav>
+        </div>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           <StudySession
@@ -66,22 +68,7 @@ export function TechLibraryContent({ tech, flashcards }: TechLibraryContentProps
 
   return (
     <>
-      <nav className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Button
-                variant="outline"
-                onClick={() => router.back()}
-                className="text-xs sm:text-sm px-2 sm:px-3"
-              >
-                ← Back
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppHeader />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
         {/* Header */}

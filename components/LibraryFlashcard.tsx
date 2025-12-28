@@ -5,6 +5,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
 import { ConvexFlashcard } from '@/lib/types';
 import { useState } from 'react';
 
@@ -16,12 +17,18 @@ interface LibraryFlashcardProps {
     isCompleted: boolean;
     nextReviewDate?: number;
   };
+  showImportantToggle?: boolean;
+  isImportant?: boolean;
+  onToggleImportant?: () => void;
 }
 
 export function LibraryFlashcard({
   flashcard,
   showProgress = false,
   progressInfo,
+  showImportantToggle = false,
+  isImportant = false,
+  onToggleImportant,
 }: LibraryFlashcardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -119,8 +126,8 @@ export function LibraryFlashcard({
             </div>
           )}
 
-          {showProgress && progressInfo && (
-            <div className="mt-4 pt-4 border-t border-slate-200 w-full">
+          <div className="mt-4 pt-4 border-t border-slate-200 w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            {showProgress && progressInfo && (
               <p className="text-xs text-slate-500">
                 Progress: {progressInfo.reviewCount} review
                 {progressInfo.reviewCount !== 1 ? 's' : ''}
@@ -131,8 +138,25 @@ export function LibraryFlashcard({
                   </span>
                 )}
               </p>
-            </div>
-          )}
+            )}
+            {showImportantToggle && onToggleImportant && (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleImportant();
+                }}
+                variant={isImportant ? 'default' : 'outline'}
+                size="sm"
+                className={`text-xs sm:text-sm ${
+                  isImportant
+                    ? 'bg-orange-600 hover:bg-orange-700'
+                    : 'border-orange-300 text-orange-700 hover:bg-orange-50'
+                }`}
+              >
+                {isImportant ? '📌 Important' : '📌 Mark as Important'}
+              </Button>
+            )}
+          </div>
         </div>
       </AccordionContent>
     </AccordionItem>

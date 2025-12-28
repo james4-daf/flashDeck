@@ -1,6 +1,7 @@
 // convex/flashcards.ts
 import { v } from 'convex/values';
 import { Doc } from './_generated/dataModel';
+import { api } from './_generated/api';
 import { mutation, query } from './_generated/server';
 
 // Get all active flashcards (for testing)
@@ -233,7 +234,7 @@ export const getImportantFlashcards = query({
   },
 });
 
-// Create a flashcard (for adding test data)
+// Create a flashcard (for adding test data or user-created cards)
 export const createFlashcard = mutation({
   args: {
     question: v.string(),
@@ -242,20 +243,81 @@ export const createFlashcard = mutation({
       v.literal('basic'),
       v.literal('multiple_choice'),
       v.literal('true_false'),
+      v.literal('fill_blank'),
+      v.literal('code_snippet'),
     ),
     category: v.string(),
     options: v.optional(v.array(v.string())),
-    tech: v.string(),
+    tech: v.optional(v.string()),
+    deckId: v.optional(v.id('decks')),
+    userId: v.optional(v.string()), // Required when deckId is provided
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert('flashcards', {
+    // If deckId is provided, validate deck exists and user permissions
+    if (args.deckId) {
+      if (!args.userId) {
+        throw new Error('UserId is required when creating flashcard in a deck');
+      }
+
+      const deck = await ctx.db.get(args.deckId);
+      if (!deck) {
+        throw new Error('Deck not found');
+      }
+
+      // Check if user owns the deck
+      if (deck.createdBy !== args.userId) {
+        throw new Error('You do not have permission to add flashcards to this deck');
+      }
+
+      // Check subscription limits
+      const userIsPremium: boolean = await ctx.runQuery(
+        api.subscriptions.isPremium,
+        {
+          userId: args.userId,
+        },
+      );
+
+      if (!userIsPremium) {
+        // Free users: Check card limit (12 cards max per deck)
+        const deckFlashcards = await ctx.db
+          .query('flashcards')
+          .filter((q) => q.eq(q.field('deckId'), args.deckId))
+          .collect();
+
+        if (deckFlashcards.length >= 12) {
+          throw new Error(
+            'FREE_LIMIT_REACHED: You have reached your free card limit (12 cards per deck). Upgrade to Premium to add unlimited cards!',
+          );
+        }
+      }
+    }
+
+    // Validate type-specific requirements
+    if (args.type === 'multiple_choice' && (!args.options || args.options.length < 2)) {
+      throw new Error('Multiple choice flashcards require at least 2 options');
+    }
+
+    const flashcardId = await ctx.db.insert('flashcards', {
       question: args.question,
       answer: args.answer,
       type: args.type,
       category: args.category,
       options: args.options,
-      tech: args.tech,
+      tech: args.tech || undefined,
+      deckId: args.deckId,
     });
+
+    // Update deck card count if flashcard is added to a deck
+    if (args.deckId) {
+      const deck = await ctx.db.get(args.deckId);
+      if (deck) {
+        await ctx.db.patch(args.deckId, {
+          cardCount: deck.cardCount + 1,
+        });
+      }
+    }
+
+    return flashcardId;
   },
 });
 

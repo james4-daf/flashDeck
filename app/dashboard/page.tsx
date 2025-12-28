@@ -1,12 +1,12 @@
 'use client';
 
+import { AppHeader } from '@/components/AppHeader';
 import { StudySession } from '@/components/StudySession';
-import { UpgradeModal } from '@/components/UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { api } from '@/convex/_generated/api';
-import { SignOutButton, useUser } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import {
   Authenticated,
   Unauthenticated,
@@ -16,7 +16,6 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { User } from 'lucide-react';
 
 export default function Dashboard() {
   return (
@@ -57,27 +56,10 @@ function DashboardContent() {
   const [selectedList, setSelectedList] = useState<string | undefined>(
     undefined,
   );
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-
-  // Check subscription status
-  const isPremium = useQuery(
-    api.subscriptions.isPremium,
-    user?.id ? { userId: user.id } : 'skip',
-  );
-
   const flashcards = useQuery(api.flashcards.getAllFlashcards);
-  // Extract unique lists from all flashcards
-  const allLists = Array.from(
-    new Set((flashcards ?? []).flatMap((card) => card.lists ?? [])),
-  );
 
   // Fetch all user progress for accurate dashboard stats
   const userProgress = useQuery(api.userProgress.getAllUserProgress, {
-    userId: user?.id || '',
-  });
-
-  // Fetch study counts for gamification
-  const studyCounts = useQuery(api.userProgress.getStudyCounts, {
     userId: user?.id || '',
   });
 
@@ -119,10 +101,10 @@ function DashboardContent() {
   if (isStudying) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <nav className="bg-white shadow-sm border-b border-slate-200">
+        <AppHeader />
+        <div className="bg-white border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
+            <div className="flex justify-end items-center h-12">
               <div className="flex items-center gap-2 sm:gap-4">
                 <span className="hidden sm:inline text-sm text-slate-600">
                   {studyMode === 'important'
@@ -138,15 +120,10 @@ function DashboardContent() {
                 >
                   Exit Study Session
                 </Button>
-                <SignOutButton>
-                  <button className="bg-red-600 text-white px-2 sm:px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-xs sm:text-sm">
-                    Sign Out
-                  </button>
-                </SignOutButton>
               </div>
             </div>
           </div>
-        </nav>
+        </div>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           <StudySession
@@ -219,46 +196,7 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <nav className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Link href="/library">
-                <Button
-                  variant="outline"
-                  className="text-xs sm:text-sm px-2 sm:px-3"
-                >
-                  Library
-                </Button>
-              </Link>
-              <Link href="/community">
-                <Button
-                  variant="outline"
-                  className="text-xs sm:text-sm px-2 sm:px-3"
-                >
-                  Community
-                </Button>
-              </Link>
-              <Link href="/profile">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full p-2 h-9 w-9 flex items-center justify-center"
-                  title={user ? `Profile - ${user.firstName || user.emailAddresses[0]?.emailAddress}` : 'Profile'}
-                >
-                  <User className="h-4 w-4" />
-                </Button>
-              </Link>
-              <SignOutButton>
-                <button className="bg-red-600 text-white px-2 sm:px-4 py-2 rounded-xl hover:bg-red-700 transition-colors text-xs sm:text-sm">
-                  Sign Out
-                </button>
-              </SignOutButton>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Main dashboard cards in a flex row */}
@@ -430,45 +368,53 @@ function DashboardContent() {
             </CardHeader>
             <CardContent>
               {flashcards ? (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs sm:text-sm text-slate-600 mb-1">
-                      Number of Flashcards
-                    </p>
-                    <p className="text-xl sm:text-2xl font-bold text-slate-900">
-                      {total}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs sm:text-sm text-slate-600 mb-1">
-                      Due for Review
-                    </p>
-                    <p className="text-xl sm:text-2xl font-bold text-blue-600">
-                      {due}
-                    </p>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                      <p className="text-xs sm:text-sm text-slate-600 mb-2">
+                        Total Cards
+                      </p>
+                      <p className="text-2xl sm:text-3xl font-bold text-slate-900">
+                        {total}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-xs sm:text-sm text-blue-700 mb-2">
+                        Due Now
+                      </p>
+                      <p className="text-2xl sm:text-3xl font-bold text-blue-600">
+                        {due}
+                      </p>
+                    </div>
                   </div>
                   {importantCount > 0 && (
-                    <div>
-                      <p className="text-xs sm:text-sm text-slate-600 mb-1">
-                        Important Cards
-                      </p>
-                      <p className="text-xl sm:text-2xl font-bold text-orange-600">
-                        {importantCount}
-                      </p>
+                    <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                      <Link href="/library/important">
+                        <p className="text-xs sm:text-sm text-orange-700 mb-2">
+                          Important Cards
+                        </p>
+                        <p className="text-2xl sm:text-3xl font-bold text-orange-600 hover:text-orange-700 cursor-pointer transition-colors">
+                          {importantCount}
+                        </p>
+                      </Link>
                     </div>
                   )}
                   {total > 0 && (
-                    <div>
-                      <p className="text-xs sm:text-sm text-slate-600 mb-2">
-                        Progress
-                      </p>
+                    <div className="pt-4 border-t border-slate-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs sm:text-sm font-medium text-slate-700">
+                          Mastery Progress
+                        </p>
+                        <p className="text-xs sm:text-sm font-semibold text-slate-900">
+                          {Math.round(((total - due) / total) * 100)}%
+                        </p>
+                      </div>
                       <Progress
                         value={((total - due) / total) * 100}
-                        className="h-2"
+                        className="h-3"
                       />
-                      <p className="text-xs text-slate-500 mt-1">
-                        {Math.round(((total - due) / total) * 100)}% reviewed
-                        recently
+                      <p className="text-xs text-slate-500 mt-2">
+                        {total - due} of {total} cards reviewed recently
                       </p>
                     </div>
                   )}
@@ -486,130 +432,6 @@ function DashboardContent() {
         </div>
 
         <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
-          {/* Study Activity */}
-          <Card className="flex-1">
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">
-                Study Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {studyCounts ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-blue-600">
-                      {studyCounts.daily}
-                    </div>
-                    <div className="text-xs sm:text-sm text-slate-500">
-                      Today
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-green-600">
-                      {studyCounts.weekly}
-                    </div>
-                    <div className="text-xs sm:text-sm text-slate-500">
-                      This Week
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-purple-600">
-                      {studyCounts.monthly}
-                    </div>
-                    <div className="text-xs sm:text-sm text-slate-500">
-                      This Month
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-slate-600">
-                      {studyCounts.total}
-                    </div>
-                    <div className="text-xs sm:text-sm text-slate-500">
-                      Total
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                  <p className="text-xs sm:text-sm text-slate-600">
-                    Loading activity...
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Study by List */}
-          <Card className="flex-1">
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">
-                Study by List
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {allLists.length > 0 ? (
-                  allLists.map((list) => (
-                    <div
-                      key={list}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-3 bg-slate-50 rounded-lg"
-                    >
-                      <span className="capitalize font-medium text-slate-700 text-sm sm:text-base">
-                        {list.replace(/([a-z])([0-9])/g, '$1 $2')}
-                      </span>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleStartStudying('list', list)}
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
-                        >
-                          Study
-                        </Button>
-                        <Link href={`/library/list/${list}`}>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs sm:text-sm"
-                          >
-                            View
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <span className="text-slate-500 text-xs sm:text-sm">
-                    No lists found
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Upgrade Prompt for Free Users */}
-          {!isPremium && (
-            <Card className="flex-1 border-blue-200 bg-blue-50">
-              <CardHeader>
-                <CardTitle className="text-lg sm:text-xl text-blue-900">
-                  Unlock Premium
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-blue-800 mb-4">
-                  Upgrade to access 20+ premium topics, unlimited decks, and
-                  all features!
-                </p>
-                <Button
-                  onClick={() => setShowUpgradeModal(true)}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                >
-                  Upgrade Now
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Quick Actions */}
           <Card className="flex-1">
             <CardHeader>
@@ -619,6 +441,22 @@ function DashboardContent() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4">
+                {importantCount > 0 && (
+                  <Link href="/library/important">
+                    <Button
+                      variant="outline"
+                      className="w-full h-12 sm:h-16 text-left flex flex-col items-start justify-center border-orange-200 hover:bg-orange-50"
+                    >
+                      <span className="font-medium text-sm sm:text-base">
+                        📌 Manage Important Cards
+                      </span>
+                      <span className="text-xs sm:text-sm text-slate-500">
+                        View and edit your {importantCount} important card
+                        {importantCount === 1 ? '' : 's'}
+                      </span>
+                    </Button>
+                  </Link>
+                )}
                 <Link href="/library">
                   <Button
                     variant="outline"
@@ -648,29 +486,23 @@ function DashboardContent() {
                   </Button>
                 )}
 
-                <Button
-                  variant="outline"
-                  className="w-full h-12 sm:h-16 text-left flex flex-col items-start justify-center cursor-not-allowed opacity-50"
-                  disabled
-                >
-                  <span className="font-medium text-sm sm:text-base">
-                    Add Flashcards
-                  </span>
-                  <span className="text-xs sm:text-sm text-slate-500">
-                    Coming soon
-                  </span>
-                </Button>
+                <Link href="/my-decks">
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 sm:h-16 text-left flex flex-col items-start justify-center"
+                  >
+                    <span className="font-medium text-sm sm:text-base">
+                      Create Deck & Add Flashcards
+                    </span>
+                    <span className="text-xs sm:text-sm text-slate-500">
+                      Organize your study materials
+                    </span>
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
         </div>
-        
-        {showUpgradeModal && (
-          <UpgradeModal
-            open={showUpgradeModal}
-            onOpenChange={setShowUpgradeModal}
-          />
-        )}
       </main>
     </div>
   );

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import type { ConvexFlashcard } from '@/lib/types';
 import { useMutation, useQuery } from 'convex/react';
 import { useEffect, useRef, useState } from 'react';
@@ -16,9 +17,10 @@ import { TrueFalseFlashcard } from './flashcard/TrueFalseFlashcard';
 interface StudySessionProps {
   userId: string;
   onComplete: () => void;
-  studyMode?: 'normal' | 'important' | 'list' | 'topic';
+  studyMode?: 'normal' | 'important' | 'list' | 'topic' | 'deck';
   listName?: string;
   topicName?: string;
+  deckId?: string;
 }
 
 export function StudySession({
@@ -27,6 +29,7 @@ export function StudySession({
   studyMode = 'normal',
   listName,
   topicName,
+  deckId,
 }: StudySessionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sessionStats, setSessionStats] = useState({
@@ -67,6 +70,17 @@ export function StudySession({
     api.flashcards.getFlashcardsByTechForStudying,
     topicQueryArgs,
   );
+
+  // Deck study query parameters
+  const deckQueryArgs =
+    studyMode === 'deck' && deckId
+      ? { deckId: deckId as Id<'decks'>, userId }
+      : 'skip';
+
+  const deckFlashcards = useQuery(
+    api.decks.getDeckFlashcardsForStudying,
+    deckQueryArgs,
+  );
   const recordAttempt = useMutation(api.userProgress.recordAttempt);
   const recordSessionAttempt = useMutation(
     api.sessionAttempts.recordSessionAttempt,
@@ -99,18 +113,21 @@ export function StudySession({
     mode: string;
     list: string | undefined;
     topic: string | undefined;
+    deck: string | undefined;
   }>({
     mode: studyMode,
     list: listName,
     topic: topicName,
+    deck: deckId,
   });
 
   useEffect(() => {
-    // Check if study mode, list, or topic has changed
+    // Check if study mode, list, topic, or deck has changed
     const hasModeChanged =
       prevStudyModeRef.current.mode !== studyMode ||
       prevStudyModeRef.current.list !== listName ||
-      prevStudyModeRef.current.topic !== topicName;
+      prevStudyModeRef.current.topic !== topicName ||
+      prevStudyModeRef.current.deck !== deckId;
 
     if (hasModeChanged) {
       // Reset session state when mode changes
@@ -128,6 +145,7 @@ export function StudySession({
         mode: studyMode,
         list: listName,
         topic: topicName,
+        deck: deckId,
       };
       // Don't return early - continue to process cards if data is available
     }
@@ -174,6 +192,26 @@ export function StudySession({
         // Still loading, don't process yet
         flashcards = undefined;
       }
+    } else if (studyMode === 'deck') {
+      // Only process if we have data from the query
+      if (deckFlashcards !== undefined) {
+        // Extract just the flashcard data from the deck query result
+        flashcards = deckFlashcards.map((item) => ({
+          _id: item._id,
+          _creationTime: item._creationTime,
+          question: item.question,
+          answer: item.answer,
+          type: item.type,
+          category: item.category,
+          tech: item.tech,
+          options: item.options,
+          lists: item.lists,
+          deckId: item.deckId,
+        }));
+      } else {
+        // Still loading, don't process yet
+        flashcards = undefined;
+      }
     } else {
       flashcards = dueFlashcards;
     }
@@ -209,9 +247,11 @@ export function StudySession({
     importantFlashcards,
     listFlashcards,
     topicFlashcards,
+    deckFlashcards,
     studyMode,
     listName,
     topicName,
+    deckId,
     cardsLocked,
   ]);
 

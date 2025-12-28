@@ -207,6 +207,42 @@ export const getDeckFlashcards = query({
   },
 });
 
+// Get flashcards in a deck for studying (with user progress)
+export const getDeckFlashcardsForStudying = query({
+  args: {
+    deckId: v.id('decks'),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Get all flashcards in the deck
+    const deckFlashcards = await ctx.db
+      .query('flashcards')
+      .filter((q) => q.eq(q.field('deckId'), args.deckId))
+      .collect();
+
+    // Get user's progress for all flashcards
+    const userProgress = await ctx.db
+      .query('userProgress')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    // Create a map of flashcard progress for quick lookup
+    const progressMap = new Map();
+    userProgress.forEach((progress) => {
+      progressMap.set(progress.flashcardId, progress);
+    });
+
+    // Return ALL flashcards in the deck (not just due ones) with progress
+    return deckFlashcards.map((flashcard) => {
+      const progress = progressMap.get(flashcard._id);
+      return {
+        ...flashcard,
+        progress: progress || null,
+      };
+    });
+  },
+});
+
 // Upvote a deck
 export const upvoteDeck = mutation({
   args: {

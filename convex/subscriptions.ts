@@ -1,6 +1,7 @@
 // convex/subscriptions.ts
 import { v } from 'convex/values';
 import { api } from './_generated/api';
+import type { Doc } from './_generated/dataModel';
 import { mutation, query } from './_generated/server';
 
 // Get user's current subscription
@@ -78,7 +79,10 @@ export const isPremium = query({
 // Get detailed subscription status (optimized - no nested query)
 export const getSubscriptionStatus = query({
   args: { userId: v.string() },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     userId: string;
     plan: 'free' | 'premium';
     status: 'active' | 'trial' | 'expired' | 'cancelled';
@@ -249,7 +253,7 @@ export const updateSubscription = mutation({
       throw new Error('Subscription not found');
     }
 
-    const updates: any = {};
+    const updates: Partial<Doc<'subscriptions'>> = {};
     if (args.updates.plan !== undefined) updates.plan = args.updates.plan;
     if (args.updates.status !== undefined) updates.status = args.updates.status;
     if (args.updates.billingCycle !== undefined)
@@ -269,7 +273,38 @@ export const updateSubscription = mutation({
   },
 });
 
-// Cancel subscription
+// Find subscription by Stripe customer ID or subscription ID
+export const getSubscriptionByStripeId = query({
+  args: {
+    stripeCustomerId: v.optional(v.string()),
+    stripeSubscriptionId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (args.stripeSubscriptionId) {
+      const subscription = await ctx.db
+        .query('subscriptions')
+        .withIndex('by_stripe_subscription', (q) =>
+          q.eq('stripeSubscriptionId', args.stripeSubscriptionId!),
+        )
+        .first();
+      return subscription;
+    }
+
+    if (args.stripeCustomerId) {
+      const subscription = await ctx.db
+        .query('subscriptions')
+        .withIndex('by_stripe_customer', (q) =>
+          q.eq('stripeCustomerId', args.stripeCustomerId!),
+        )
+        .first();
+      return subscription;
+    }
+
+    return null;
+  },
+});
+
+// Cancel subscription (deprecated - use Stripe Portal)
 export const cancelSubscription = mutation({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
@@ -286,6 +321,46 @@ export const cancelSubscription = mutation({
       status: 'cancelled',
       plan: 'free',
     });
+  },
+});
+
+// Delete subscription record (for refunds - immediate access removal)
+export const deleteSubscription = mutation({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const subscription = await ctx.db
+      .query('subscriptions')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .first();
+
+    if (!subscription) {
+      throw new Error('Subscription not found');
+    }
+
+    await ctx.db.delete(subscription._id);
+    return { deleted: true };
+  },
+});
+
+// Delete subscription by Stripe subscription ID (for webhooks)
+export const deleteSubscriptionByStripeId = mutation({
+  args: {
+    stripeSubscriptionId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const subscription = await ctx.db
+      .query('subscriptions')
+      .withIndex('by_stripe_subscription', (q) =>
+        q.eq('stripeSubscriptionId', args.stripeSubscriptionId),
+      )
+      .first();
+
+    if (!subscription) {
+      throw new Error('Subscription not found');
+    }
+
+    await ctx.db.delete(subscription._id);
+    return { deleted: true };
   },
 });
 
@@ -326,7 +401,18 @@ export const setTrial = mutation({
 });
 
 // Helper: Check if subscription is active
-function checkSubscriptionStatus(subscription: any): boolean {
+function checkSubscriptionStatus(
+  subscription:
+    | Doc<'subscriptions'>
+    | {
+        plan: 'free' | 'premium';
+        status: 'active' | 'trial' | 'expired' | 'cancelled';
+        trialEndsAt?: number;
+        subscriptionEndsAt?: number;
+      }
+    | null
+    | undefined,
+): boolean {
   if (!subscription) return false;
   if (subscription.plan !== 'premium') return false;
   if (subscription.status !== 'active' && subscription.status !== 'trial')
@@ -334,10 +420,7 @@ function checkSubscriptionStatus(subscription: any): boolean {
 
   const now = Date.now();
   if (subscription.trialEndsAt && subscription.trialEndsAt < now) return false;
-  if (
-    subscription.subscriptionEndsAt &&
-    subscription.subscriptionEndsAt < now
-  )
+  if (subscription.subscriptionEndsAt && subscription.subscriptionEndsAt < now)
     return false;
 
   return true;
@@ -358,7 +441,7 @@ export const getFeatureAccess = query({
       maxDecks: isPremiumActive ? Infinity : 1,
       maxCardsPerDeck: isPremiumActive ? Infinity : 12,
       maxCardsPerSession: isPremiumActive ? Infinity : 12,
-      maxImportantCards: isPremiumActive ? Infinity : 5,
+      maxImportantCards: isPremiumActive ? Infinity : 8,
       canUseCodeSnippets: isPremiumActive,
       canUseFillBlank: isPremiumActive,
       canAccessPremiumTopics: isPremiumActive,
@@ -367,4 +450,3 @@ export const getFeatureAccess = query({
     };
   },
 });
-

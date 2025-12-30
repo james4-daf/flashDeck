@@ -8,9 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { calculateSavings } from '@/lib/subscription';
 import { useUser } from '@clerk/nextjs';
 import { useState } from 'react';
-import { calculateSavings } from '@/lib/subscription';
 
 interface UpgradeModalProps {
   open: boolean;
@@ -103,10 +103,14 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
             <div className="text-4xl font-bold text-slate-900">
               ${selectedPlan === 'annual' ? annualPrice : monthlyPrice}
               {selectedPlan === 'monthly' && (
-                <span className="text-lg font-normal text-slate-600">/month</span>
+                <span className="text-lg font-normal text-slate-600">
+                  /month
+                </span>
               )}
               {selectedPlan === 'annual' && (
-                <span className="text-lg font-normal text-slate-600">/year</span>
+                <span className="text-lg font-normal text-slate-600">
+                  /year
+                </span>
               )}
             </div>
             {selectedPlan === 'annual' && (
@@ -122,24 +126,11 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
             <ul className="space-y-2 text-sm text-slate-700">
               <li className="flex items-center gap-2">
                 <span className="text-green-600">✓</span>
-                20+ premium topics (JavaScript Under the Hood, Advanced React,
-                Next.js, TypeScript, and more)
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-green-600">✓</span>
-                Unlimited user-created decks
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-green-600">✓</span>
-                Unlimited cards per deck
+                Unlimited user-created decks and cards
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-green-600">✓</span>
                 Unlimited cards per study session
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-green-600">✓</span>
-                Code snippet & fill-in-the-blank flashcards
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-green-600">✓</span>
@@ -152,6 +143,11 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
               <li className="flex items-center gap-2">
                 <span className="text-green-600">✓</span>
                 Unlimited progress history
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-green-600">✓</span>
+                20+ premium topics (JavaScript Under the Hood, Advanced React,
+                Next.js, TypeScript, and more)
               </li>
             </ul>
           </div>
@@ -173,4 +169,3 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
     </Dialog>
   );
 }
-

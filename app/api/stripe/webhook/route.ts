@@ -125,51 +125,192 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.updated': {
-        // const subscription = event.data.object as Stripe.Subscription;
-        // const customerId = subscription.customer as string;
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string;
+        const subscriptionId = subscription.id;
 
-        // Find user by customer ID (we'll need to query Convex)
-        // For now, we'll handle this in the update mutation
-        // const priceId = subscription.items.data[0]?.price.id;
-        // const billingCycle =
-        //   subscription.items.data[0]?.price.recurring?.interval === 'year'
-        //     ? 'annual'
-        //     : 'monthly';
-        // const subscriptionEndsAt = subscription.current_period_end * 1000;
+        console.log('Subscription updated:', {
+          subscriptionId,
+          customerId,
+          status: subscription.status,
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          currentPeriodEnd: subscription.current_period_end,
+        });
 
-        // Note: We need the userId, which we can get from the subscription metadata
-        // or by querying Convex subscriptions table by stripeCustomerId
-        // For now, we'll update based on customer ID match
-        // This is a limitation - ideally store userId in Stripe customer metadata
+        // Find subscription in Convex by Stripe subscription ID
+        const convexSubscription = await convex.query(
+          api.subscriptions.getSubscriptionByStripeId,
+          {
+            stripeSubscriptionId: subscriptionId,
+          },
+        );
+
+        if (!convexSubscription) {
+          console.error('Subscription not found in Convex:', subscriptionId);
+          break;
+        }
+
+        // If subscription is immediately cancelled (refund scenario), delete the record
+        if (subscription.status === 'canceled' && !subscription.cancel_at_period_end) {
+          console.log('Subscription immediately cancelled (refund) - deleting record');
+          await convex.mutation(api.subscriptions.deleteSubscriptionByStripeId, {
+            stripeSubscriptionId: subscriptionId,
+          });
+          break;
+        }
+
+        const priceId = subscription.items.data[0]?.price.id;
+        const billingCycle =
+          subscription.items.data[0]?.price.recurring?.interval === 'year'
+            ? 'annual'
+            : 'monthly';
+        const subscriptionEndsAt = subscription.current_period_end * 1000;
+
+        // Determine status based on Stripe subscription
+        let status: 'active' | 'cancelled' | 'expired' = 'active';
+        let plan: 'premium' | 'free' = 'premium';
+
+        if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
+          status = 'cancelled';
+          plan = 'free';
+        } else if (subscription.status === 'past_due') {
+          // Still active but payment failed - keep as active for now
+          status = 'active';
+        } else if (subscription.cancel_at_period_end) {
+          // Cancelled but active until period ends (cancel auto-renewal)
+          status = 'cancelled';
+          plan = 'premium'; // Still premium until period ends
+        } else if (subscription.status === 'active') {
+          status = 'active';
+          plan = 'premium';
+        }
+
+        // Update subscription in Convex
+        await convex.mutation(api.subscriptions.updateSubscription, {
+          userId: convexSubscription.userId,
+          updates: {
+            status,
+            plan,
+            billingCycle,
+            subscriptionEndsAt,
+            stripePriceId: priceId,
+          },
+        });
+
+        console.log('Subscription updated in Convex:', {
+          userId: convexSubscription.userId,
+          status,
+          plan,
+        });
 
         break;
       }
 
       case 'customer.subscription.deleted': {
-        // const subscription = event.data.object as Stripe.Subscription;
-        // const customerId = subscription.customer as string;
+        const subscription = event.data.object as Stripe.Subscription;
+        const subscriptionId = subscription.id;
 
-        // Find subscription by customer ID and cancel it
-        // Note: This requires querying Convex by stripeCustomerId
-        // For now, we'll handle cancellation through the portal
+        console.log('Subscription deleted:', {
+          subscriptionId,
+        });
+
+        // Delete subscription record entirely (refund scenario - immediate access removal)
+        try {
+          await convex.mutation(api.subscriptions.deleteSubscriptionByStripeId, {
+            stripeSubscriptionId: subscriptionId,
+          });
+          console.log('Subscription deleted from Convex:', subscriptionId);
+        } catch (error) {
+          console.error('Error deleting subscription:', error);
+          // If deletion fails, try to mark as cancelled as fallback
+          const convexSubscription = await convex.query(
+            api.subscriptions.getSubscriptionByStripeId,
+            {
+              stripeSubscriptionId: subscriptionId,
+            },
+          );
+
+          if (convexSubscription) {
+            await convex.mutation(api.subscriptions.updateSubscription, {
+              userId: convexSubscription.userId,
+              updates: {
+                status: 'cancelled',
+                plan: 'free',
+                subscriptionEndsAt: Date.now(),
+              },
+            });
+          }
+        }
+
+        break;
+      }
+
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        const customerId = charge.customer as string;
+
+        console.log('Charge refunded:', {
+          chargeId: charge.id,
+          customerId,
+          amount: charge.amount,
+        });
+
+        // Find subscription by customer ID and delete it (refund = immediate access removal)
+        if (customerId) {
+          const convexSubscription = await convex.query(
+            api.subscriptions.getSubscriptionByStripeId,
+            {
+              stripeCustomerId: customerId,
+            },
+          );
+
+          if (convexSubscription && convexSubscription.stripeSubscriptionId) {
+            try {
+              await convex.mutation(api.subscriptions.deleteSubscriptionByStripeId, {
+                stripeSubscriptionId: convexSubscription.stripeSubscriptionId,
+              });
+              console.log('Subscription deleted due to refund:', {
+                userId: convexSubscription.userId,
+                subscriptionId: convexSubscription.stripeSubscriptionId,
+              });
+            } catch (error) {
+              console.error('Error deleting subscription after refund:', error);
+            }
+          }
+        }
 
         break;
       }
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
-        // Using type assertion to handle Stripe API version differences
-        const subscriptionId = (invoice as unknown as { subscription: string | null }).subscription as string | null;
-        // const customerId = invoice.customer as string;
+        const subscriptionId = invoice.subscription as string | null;
 
         if (subscriptionId) {
-          // const subscription = await stripe.subscriptions.retrieve(
-          //   subscriptionId,
-          // );
-          // const subscriptionEndsAt = subscription.current_period_end * 1000;
+          const subscription = await stripe.subscriptions.retrieve(
+            subscriptionId,
+          );
+          const subscriptionEndsAt = subscription.current_period_end * 1000;
 
-          // Update subscription end date
-          // Note: Need userId lookup by customerId
+          // Find subscription in Convex
+          const convexSubscription = await convex.query(
+            api.subscriptions.getSubscriptionByStripeId,
+            {
+              stripeSubscriptionId: subscriptionId,
+            },
+          );
+
+          if (convexSubscription) {
+            // Update subscription end date
+            await convex.mutation(api.subscriptions.updateSubscription, {
+              userId: convexSubscription.userId,
+              updates: {
+                subscriptionEndsAt,
+                status: 'active', // Payment succeeded, ensure active
+                plan: 'premium',
+              },
+            });
+          }
         }
 
         break;

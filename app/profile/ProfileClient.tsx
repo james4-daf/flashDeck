@@ -28,13 +28,11 @@ function ProfileContent() {
   const { user } = useUser();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
 
   const subscriptionStatus = useQuery(
     api.subscriptions.getSubscriptionStatus,
     user?.id ? { userId: user.id } : 'skip',
   );
-  const cancelSubscription = useMutation(api.subscriptions.cancelSubscription);
 
   // Fetch study counts for activity section
   const studyCounts = useQuery(api.userProgress.getStudyCounts, {
@@ -59,25 +57,6 @@ function ProfileContent() {
     } catch (err) {
       console.error('Error creating portal session:', err);
       setLoading(false);
-    }
-  };
-
-  const handleCancelSubscription = async () => {
-    if (!user?.id) return;
-    const confirmed = window.confirm(
-      'Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.',
-    );
-    if (!confirmed) return;
-    setCancelling(true);
-    try {
-      await cancelSubscription({ userId: user.id });
-      alert('Subscription cancelled successfully.');
-      router.refresh();
-    } catch (err) {
-      console.error('Error cancelling subscription:', err);
-      alert('Failed to cancel subscription. Please try again.');
-    } finally {
-      setCancelling(false);
     }
   };
 
@@ -296,31 +275,16 @@ function ProfileContent() {
                   )}
                   <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
                     {subscriptionStatus.stripeCustomerId ? (
-                      <>
-                        <Button
-                          onClick={handleManageSubscription}
-                          disabled={loading}
-                          variant="outline"
-                          className="flex-1"
-                        >
-                          {loading
-                            ? 'Loading...'
-                            : 'Manage Subscription (Stripe Portal)'}
-                        </Button>
-                        {subscriptionStatus.isPremium &&
-                          subscriptionStatus.status !== 'cancelled' && (
-                            <Button
-                              onClick={handleCancelSubscription}
-                              disabled={cancelling}
-                              variant="outline"
-                              className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
-                            >
-                              {cancelling
-                                ? 'Cancelling...'
-                                : 'Cancel Subscription'}
-                            </Button>
-                          )}
-                      </>
+                      <Button
+                        onClick={handleManageSubscription}
+                        disabled={loading}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        {loading
+                          ? 'Loading...'
+                          : 'Manage Subscription (Stripe Portal)'}
+                      </Button>
                     ) : (
                       <Link href="/#pricing" className="flex-1">
                         <Button className="w-full bg-blue-600 hover:bg-blue-700">

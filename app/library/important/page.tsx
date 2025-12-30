@@ -3,6 +3,7 @@
 import { AppHeader } from '@/components/AppHeader';
 import { LibraryFlashcard } from '@/components/LibraryFlashcard';
 import { StudySession } from '@/components/StudySession';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { Accordion } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +16,7 @@ import { useState } from 'react';
 export default function ImportantListPage() {
   const { user } = useUser();
   const [isStudying, setIsStudying] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Fetch important flashcards
   const importantFlashcards = useQuery(
@@ -55,13 +57,13 @@ export default function ImportantListPage() {
         error instanceof Error &&
         error.message?.includes('FREE_LIMIT_REACHED')
       ) {
-        alert(
-          'You have reached your free important cards limit (5 cards). Upgrade to Premium to mark unlimited cards as important!',
-        );
-      } else {
-        console.error('Error toggling important status:', error);
-        alert('Failed to update important status. Please try again.');
+        // Silently handle limit reached - show upgrade modal
+        setShowUpgradeModal(true);
+        return;
       }
+      // Only log/show unexpected errors
+      console.error('Error toggling important status:', error);
+      alert('Failed to update important status. Please try again.');
     }
   };
 
@@ -227,6 +229,13 @@ export default function ImportantListPage() {
           </CardContent>
         </Card>
       </main>
+
+      {showUpgradeModal && (
+        <UpgradeModal
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+        />
+      )}
     </div>
   );
 }

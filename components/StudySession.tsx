@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import type { ConvexFlashcard } from '@/lib/types';
@@ -43,6 +44,7 @@ export function StudySession({
     { card: ConvexFlashcard; isCorrect: boolean }[]
   >([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Use Convex queries and mutations - now with session filtering
   const dueFlashcards = useQuery(
@@ -301,6 +303,16 @@ export function StudySession({
         important,
       });
     } catch (error) {
+      // Check if it's the free limit error
+      if (
+        error instanceof Error &&
+        error.message?.includes('FREE_LIMIT_REACHED')
+      ) {
+        // Silently handle limit reached - show upgrade modal
+        setShowUpgradeModal(true);
+        return;
+      }
+      // Only log unexpected errors
       console.error('Error marking as important:', error);
     }
   };
@@ -642,6 +654,13 @@ export function StudySession({
           </div>
         </div>
       </div>
+
+      {showUpgradeModal && (
+        <UpgradeModal
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+        />
+      )}
     </div>
   );
 }

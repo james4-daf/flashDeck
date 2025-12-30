@@ -119,7 +119,9 @@ export default defineSchema({
     stripePriceId: v.optional(v.string()),
   })
     .index('by_user', ['userId'])
-    .index('by_status', ['status']),
+    .index('by_status', ['status'])
+    .index('by_stripe_customer', ['stripeCustomerId'])
+    .index('by_stripe_subscription', ['stripeSubscriptionId']),
 
   // Topics - organized collections of flashcards
   topics: defineTable({

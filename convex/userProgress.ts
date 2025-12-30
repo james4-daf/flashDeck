@@ -331,11 +331,11 @@ export const markImportant = mutation({
     important: v.boolean(),
   },
   handler: async (ctx, args) => {
-      // Check subscription limits if marking as important
-      if (args.important) {
-        const userIsPremium = await ctx.runQuery(api.subscriptions.isPremium, {
-          userId: args.userId,
-        });
+    // Check subscription limits if marking as important
+    if (args.important) {
+      const userIsPremium = await ctx.runQuery(api.subscriptions.isPremium, {
+        userId: args.userId,
+      });
 
       if (!userIsPremium) {
         // Free users: Check important card limit (8 max)
@@ -355,11 +355,14 @@ export const markImportant = mutation({
 
         const isAlreadyImportant = currentProgress?.important === true;
 
-        // If not already important and at limit, throw error
+        // If not already important and at limit, return error result instead of throwing
         if (!isAlreadyImportant && importantCards.length >= 8) {
-          throw new Error(
-            'FREE_LIMIT_REACHED: You have reached your free important cards limit (8 cards). Upgrade to Premium to mark unlimited cards as important!',
-          );
+          return {
+            success: false,
+            error: 'FREE_LIMIT_REACHED',
+            message:
+              'You have reached your free important cards limit (8 cards). Upgrade to Premium to mark unlimited cards as important!',
+          };
         }
       }
     }
@@ -373,5 +376,7 @@ export const markImportant = mutation({
     if (progress) {
       await ctx.db.patch(progress._id, { important: args.important });
     }
+
+    return { success: true };
   },
 });

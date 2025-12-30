@@ -2,8 +2,12 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MarkdownContent } from '@/components/MarkdownContent';
 import type { ConvexFlashcard, FlashcardOption } from '@/lib/types';
+import { celebrateCorrect, shakeAnimation } from '@/lib/animations';
+import { getCategoryGradientOverlay, getCategoryBorderColor } from '@/lib/categoryGradients';
 import { playAnswerSound } from '@/lib/utils';
+import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 interface MultipleChoiceFlashcardProps {
@@ -17,6 +21,7 @@ interface MultipleChoiceFlashcardProps {
     color: string;
     icon: string;
   };
+  hadPreviousIncorrect?: boolean;
 }
 
 export function MultipleChoiceFlashcard({
@@ -25,6 +30,7 @@ export function MultipleChoiceFlashcard({
   onAnswer,
   showingResult = false,
   cardStateInfo,
+  hadPreviousIncorrect = false,
 }: MultipleChoiceFlashcardProps) {
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
@@ -91,8 +97,12 @@ export function MultipleChoiceFlashcard({
 
     setIsCorrect(correct);
 
-    // Play sound feedback
+    // Play sound feedback and celebrate
     playAnswerSound(correct);
+    // Only celebrate if they got it right AND had previously gotten it wrong
+    if (correct && hadPreviousIncorrect) {
+      celebrateCorrect();
+    }
 
     onAnswer(correct);
   };
@@ -168,59 +178,181 @@ export function MultipleChoiceFlashcard({
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <div className="space-y-2">
-          <CardTitle className="text-lg sm:text-xl">
-            {flashcard.question}
-          </CardTitle>
-          {cardStateInfo && (
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-medium ${cardStateInfo.color}`}>
-                {cardStateInfo.icon}{' '}
-                {cardStateInfo.shortLabel || cardStateInfo.label}
-              </span>
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-3">
-          {shuffledOptions.map((option) => (
-            <button
-              key={option.id}
-              onClick={() => handleSelectAnswer(option.id)}
-              disabled={showingResult || pending}
-              className={`w-full p-3 sm:p-4 border-2 rounded-lg text-left transition-colors flex items-start ${getOptionStyle(
-                option.id,
-              )}`}
-            >
-              {getOptionIcon(option.id)}
-              <span className="text-sm sm:text-base">{option.option_text}</span>
-            </button>
-          ))}
-        </div>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className="w-full max-w-2xl mx-auto"
+    >
+      <Card
+        className={`w-full relative overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 ${getCategoryBorderColor(
+          flashcard.category,
+        )}`}
+      >
+        {/* Gradient overlay */}
+        <div
+          className={`absolute inset-0 ${getCategoryGradientOverlay(
+            flashcard.category,
+          )} pointer-events-none`}
+        />
+        <CardHeader className="relative z-10">
+          <div className="space-y-3">
+            <CardTitle className="text-xl sm:text-2xl font-bold leading-tight text-slate-900">
+              <MarkdownContent content={flashcard.question} inline />
+            </CardTitle>
+            {cardStateInfo && (
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-medium ${cardStateInfo.color}`}>
+                  {cardStateInfo.icon}{' '}
+                  {cardStateInfo.shortLabel || cardStateInfo.label}
+                </span>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4 relative z-10">
+          <div className="space-y-3">
+            {shuffledOptions.map((option, index) => {
+              const isSelected = selectedAnswers.includes(option.id);
+              const isCorrectOption = option.is_correct;
+              const isWrongSelected =
+                isSelected && !isCorrectOption && showingResult;
 
-        {!showingResult && (
-          <Button
-            onClick={handleSubmit}
-            disabled={selectedAnswers.length === 0 || pending}
-            className={`w-full transition-all duration-200 py-3 sm:py-4 text-base sm:text-lg ${
-              isCorrect === true
-                ? 'bg-green-500 text-white scale-105'
-                : isCorrect === false
-                  ? 'bg-red-500 text-white scale-105'
-                  : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            {isCorrect === true
-              ? '✓ Correct!'
-              : isCorrect === false
-                ? '✗ Incorrect'
-                : 'Submit Answer'}
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+              return (
+                <motion.button
+                  key={option.id}
+                  initial={{ x: -50, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{
+                    delay: index * 0.1,
+                    type: 'spring',
+                    stiffness: 100,
+                    damping: 10,
+                  }}
+                  whileHover={
+                    !showingResult && !pending
+                      ? { scale: 1.02, y: -2 }
+                      : {}
+                  }
+                  whileTap={!showingResult && !pending ? { scale: 0.98 } : {}}
+                  onClick={() => handleSelectAnswer(option.id)}
+                  disabled={showingResult || pending}
+                  className={`w-full p-4 sm:p-5 border-2 rounded-xl text-left transition-all duration-200 flex items-start relative overflow-hidden group shadow-sm hover:shadow-md ${getOptionStyle(
+                    option.id,
+                  )}`}
+                >
+                  {/* Ripple effect on click */}
+                  <motion.span
+                    className="absolute inset-0 bg-black/10 rounded-xl"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={
+                      isSelected && !showingResult
+                        ? { scale: 1, opacity: [0.5, 0] }
+                        : {}
+                    }
+                    transition={{ duration: 0.4 }}
+                  />
+                  {/* Shake animation for wrong answer */}
+                  <motion.div
+                    animate={isWrongSelected ? shakeAnimation : {}}
+                    className="flex items-start w-full"
+                  >
+                    {getOptionIcon(option.id)}
+                    <span className="text-base sm:text-lg font-medium relative z-10 leading-relaxed">
+                      <MarkdownContent content={option.option_text} />
+                    </span>
+                  </motion.div>
+                  {/* Success checkmark animation */}
+                  {showingResult && isCorrectOption && (
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 200,
+                        damping: 10,
+                        delay: index * 0.1,
+                      }}
+                      className="ml-auto text-green-600 text-xl"
+                    >
+                      ✓
+                    </motion.div>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+
+          {!showingResult && (
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: shuffledOptions.length * 0.1 + 0.2 }}
+            >
+              <Button
+                onClick={handleSubmit}
+                disabled={selectedAnswers.length === 0 || pending}
+                className={`w-full transition-all duration-200 py-4 sm:py-5 text-base sm:text-lg font-semibold relative overflow-hidden ${
+                  isCorrect === true
+                    ? 'bg-green-500 text-white'
+                    : isCorrect === false
+                      ? 'bg-red-500 text-white'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                <motion.span
+                  className="absolute inset-0 bg-white/20"
+                  initial={{ scale: 0 }}
+                  animate={
+                    isCorrect !== null
+                      ? { scale: 1, opacity: [1, 0] }
+                      : {}
+                  }
+                  transition={{ duration: 0.4 }}
+                />
+                <motion.span
+                  className="relative z-10 flex items-center justify-center gap-2"
+                  animate={
+                    isCorrect === false ? shakeAnimation : {}
+                  }
+                >
+                  {isCorrect === true && (
+                    <motion.span
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 200,
+                        damping: 10,
+                      }}
+                    >
+                      ✓
+                    </motion.span>
+                  )}
+                  {isCorrect === false && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 200,
+                        damping: 10,
+                      }}
+                    >
+                      ✗
+                    </motion.span>
+                  )}
+                  {isCorrect === true
+                    ? 'Correct!'
+                    : isCorrect === false
+                      ? 'Incorrect'
+                      : 'Submit Answer'}
+                </motion.span>
+              </Button>
+            </motion.div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

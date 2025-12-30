@@ -3,9 +3,9 @@
 import { AppHeader } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SignOutButton, useUser, SignedIn, SignedOut } from '@clerk/nextjs';
 import { api } from '@/convex/_generated/api';
-import { useMutation, useQuery } from 'convex/react';
+import { SignedIn, SignedOut, SignOutButton, useUser } from '@clerk/nextjs';
+import { useQuery } from 'convex/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -26,7 +26,6 @@ function RedirectToLogin() {
 
 function ProfileContent() {
   const { user } = useUser();
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const subscriptionStatus = useQuery(

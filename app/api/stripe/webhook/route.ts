@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           customerId,
           status: subscription.status,
           cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          currentPeriodEnd: subscription.current_period_end,
+          currentPeriodEnd: (subscription as unknown as { current_period_end: number }).current_period_end,
         });
 
         // Find subscription in Convex by Stripe subscription ID
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
           subscription.items.data[0]?.price.recurring?.interval === 'year'
             ? 'annual'
             : 'monthly';
-        const subscriptionEndsAt = subscription.current_period_end * 1000;
+        const subscriptionEndsAt = (subscription as unknown as { current_period_end: number }).current_period_end * 1000;
 
         // Determine status based on Stripe subscription
         let status: 'active' | 'cancelled' | 'expired' = 'active';
@@ -284,13 +284,13 @@ export async function POST(request: NextRequest) {
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
-        const subscriptionId = invoice.subscription as string | null;
+        const subscriptionId = (invoice as unknown as { subscription: string | null }).subscription;
 
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(
             subscriptionId,
           );
-          const subscriptionEndsAt = subscription.current_period_end * 1000;
+          const subscriptionEndsAt = (subscription as unknown as { current_period_end: number }).current_period_end * 1000;
 
           // Find subscription in Convex
           const convexSubscription = await convex.query(

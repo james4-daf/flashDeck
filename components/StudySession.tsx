@@ -3,11 +3,14 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { UpgradeModal } from '@/components/UpgradeModal';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import type { ConvexFlashcard } from '@/lib/types';
+import { pulseAnimation } from '@/lib/animations';
 import { useMutation, useQuery } from 'convex/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { BasicFlashcard } from './flashcard/BasicFlashcard';
 import { CodeSnippetFlashcard } from './flashcard/CodeSnippetFlashcard';
@@ -297,21 +300,19 @@ export function StudySession({
     if (!currentCard) return;
 
     try {
-      await markImportant({
+      const result = await markImportant({
         userId,
         flashcardId: currentCard._id,
         important,
       });
-    } catch (error) {
-      // Check if it's the free limit error
-      if (
-        error instanceof Error &&
-        error.message?.includes('FREE_LIMIT_REACHED')
-      ) {
-        // Silently handle limit reached - show upgrade modal
-        setShowUpgradeModal(true);
-        return;
+
+      // Check if limit was reached (returns error result instead of throwing)
+      if (result && 'success' in result && !result.success) {
+        if (result.error === 'FREE_LIMIT_REACHED') {
+          setShowUpgradeModal(true);
+        }
       }
+    } catch (error) {
       // Only log unexpected errors
       console.error('Error marking as important:', error);
     }
@@ -390,6 +391,7 @@ export function StudySession({
             showImportantButton={shouldShowImportantButton}
             isImportant={!!currentProgress?.important}
             cardStateInfo={cardStateInfo}
+            hadPreviousIncorrect={currentProgress?.lastCorrect === false}
           />
         );
       case 'multiple_choice':
@@ -411,6 +413,7 @@ export function StudySession({
             onAnswer={handleAnswer}
             showingResult={answered}
             cardStateInfo={cardStateInfo}
+            hadPreviousIncorrect={currentProgress?.lastCorrect === false}
           />
         );
       case 'true_false':
@@ -420,6 +423,7 @@ export function StudySession({
             onAnswer={handleAnswer}
             showingResult={answered}
             cardStateInfo={cardStateInfo}
+            hadPreviousIncorrect={currentProgress?.lastCorrect === false}
           />
         );
       case 'fill_blank':
@@ -429,6 +433,7 @@ export function StudySession({
             onAnswer={handleAnswer}
             showingResult={answered}
             cardStateInfo={cardStateInfo}
+            hadPreviousIncorrect={currentProgress?.lastCorrect === false}
           />
         );
       case 'code_snippet':
@@ -438,6 +443,7 @@ export function StudySession({
             onAnswer={handleAnswer}
             showingResult={answered}
             cardStateInfo={cardStateInfo}
+            hadPreviousIncorrect={currentProgress?.lastCorrect === false}
           />
         );
       default:
@@ -474,16 +480,30 @@ export function StudySession({
           : dueFlashcards === undefined
   ) {
     return (
-      <div className="flex items-center justify-center min-h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600 text-sm sm:text-base px-4">
-            {studyMode === 'list'
-              ? `Loading flashcards for ${listName?.replace(/([a-z])([0-9])/g, '$1 $2')}...`
-              : studyMode === 'topic'
-                ? `Loading flashcards for ${topicName}...`
-                : 'Loading flashcards...'}
-          </p>
+      <div className="flex items-center justify-center min-h-64 p-4">
+        <div className="w-full max-w-2xl space-y-4">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/4 mt-2" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-12 w-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+              </div>
+            </CardContent>
+          </Card>
+          <div className="text-center">
+            <p className="text-slate-600 text-sm sm:text-base px-4">
+              {studyMode === 'list'
+                ? `Loading flashcards for ${listName?.replace(/([a-z])([0-9])/g, '$1 $2')}...`
+                : studyMode === 'topic'
+                  ? `Loading flashcards for ${topicName}...`
+                  : 'Loading flashcards...'}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -626,15 +646,42 @@ export function StudySession({
     <div className="relative min-h-screen pb-24">
       {/* Current Flashcard */}
       <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-        {renderFlashcard()}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentIndex}
+            initial={{ x: 300, opacity: 0, scale: 0.9 }}
+            animate={{ x: 0, opacity: 1, scale: 1 }}
+            exit={{ x: -300, opacity: 0, scale: 0.9 }}
+            transition={{
+              type: 'spring',
+              stiffness: 300,
+              damping: 30,
+            }}
+          >
+            {renderFlashcard()}
+          </motion.div>
+        </AnimatePresence>
 
         {/* Next Card Button */}
         {answered && (
-          <div className="flex flex-col items-center mt-4 sm:mt-6">
-            <Button onClick={handleNextCard} className="w-full sm:w-48">
-              Next Card
-            </Button>
-          </div>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-col items-center mt-4 sm:mt-6"
+          >
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button onClick={handleNextCard} className="w-full sm:w-48 relative overflow-hidden group">
+                <span className="relative z-10">Next Card</span>
+                <motion.span
+                  className="absolute inset-0 bg-white/20"
+                  initial={{ x: '-100%' }}
+                  whileHover={{ x: '100%' }}
+                  transition={{ duration: 0.5 }}
+                />
+              </Button>
+            </motion.div>
+          </motion.div>
         )}
       </div>
 
@@ -646,11 +693,21 @@ export function StudySession({
               <h2 className="text-sm sm:text-base font-semibold text-slate-900">
                 Study Session
               </h2>
-              <p className="text-xs sm:text-sm font-medium text-slate-900">
+              <motion.p
+                key={accuracy}
+                initial={{ scale: 1.2 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="text-xs sm:text-sm font-medium text-slate-900"
+              >
                 {accuracy}% accuracy
-              </p>
+              </motion.p>
             </div>
-            <Progress value={progress} className="w-full h-2" />
+            <motion.div
+              animate={answered && sessionStats.correct > 0 ? pulseAnimation : undefined}
+            >
+              <Progress value={progress} className="w-full h-2" />
+            </motion.div>
           </div>
         </div>
       </div>

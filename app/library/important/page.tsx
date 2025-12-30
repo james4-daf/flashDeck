@@ -46,21 +46,20 @@ export default function ImportantListPage() {
     if (!user?.id) return;
 
     try {
-      await markImportant({
+      const result = await markImportant({
         userId: user.id,
         flashcardId: flashcardId,
         important: !currentImportant,
       });
-    } catch (error: unknown) {
-      // Check if it's the free limit error
-      if (
-        error instanceof Error &&
-        error.message?.includes('FREE_LIMIT_REACHED')
-      ) {
-        // Silently handle limit reached - show upgrade modal
-        setShowUpgradeModal(true);
+
+      // Check if limit was reached (returns error result instead of throwing)
+      if (result && 'success' in result && !result.success) {
+        if (result.error === 'FREE_LIMIT_REACHED') {
+          setShowUpgradeModal(true);
+        }
         return;
       }
+    } catch (error: unknown) {
       // Only log/show unexpected errors
       console.error('Error toggling important status:', error);
       alert('Failed to update important status. Please try again.');

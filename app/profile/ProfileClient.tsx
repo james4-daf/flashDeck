@@ -1,12 +1,12 @@
 'use client';
 
 import { AppHeader } from '@/components/AppHeader';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
 import { SignedIn, SignedOut, SignOutButton, useUser } from '@clerk/nextjs';
 import { useQuery } from 'convex/react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -27,6 +27,7 @@ function RedirectToLogin() {
 function ProfileContent() {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const subscriptionStatus = useQuery(
     api.subscriptions.getSubscriptionStatus,
@@ -285,11 +286,12 @@ function ProfileContent() {
                           : 'Manage Subscription (Stripe Portal)'}
                       </Button>
                     ) : (
-                      <Link href="/#pricing" className="flex-1">
-                        <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                          Upgrade to Premium
-                        </Button>
-                      </Link>
+                      <Button
+                        onClick={() => setShowUpgradeModal(true)}
+                        className="flex-1 w-full bg-blue-600 hover:bg-blue-700"
+                      >
+                        Upgrade to Premium
+                      </Button>
                     )}
                   </div>
                 </>
@@ -305,6 +307,13 @@ function ProfileContent() {
           </Card>
         </div>
       </main>
+
+      {showUpgradeModal && (
+        <UpgradeModal
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+        />
+      )}
     </div>
   );
 }

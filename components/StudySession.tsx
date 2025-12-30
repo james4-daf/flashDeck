@@ -643,54 +643,59 @@ export function StudySession({
   const cardStateInfo = getCardStateInfo();
 
   return (
-    <div className="relative min-h-screen pb-24">
-      {/* Current Flashcard */}
-      <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentIndex}
-            initial={{ x: 300, opacity: 0, scale: 0.9 }}
-            animate={{ x: 0, opacity: 1, scale: 1 }}
-            exit={{ x: -300, opacity: 0, scale: 0.9 }}
-            transition={{
-              type: 'spring',
-              stiffness: 300,
-              damping: 30,
-            }}
-          >
-            {renderFlashcard()}
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Next Card Button */}
-        {answered && (
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-col items-center mt-4 sm:mt-6"
-          >
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button onClick={handleNextCard} className="w-full sm:w-48 relative overflow-hidden group">
-                <span className="relative z-10">Next Card</span>
-                <motion.span
-                  className="absolute inset-0 bg-white/20"
-                  initial={{ x: '-100%' }}
-                  whileHover={{ x: '100%' }}
-                  transition={{ duration: 0.5 }}
-                />
-              </Button>
+    <div className="relative h-[calc(100vh-10rem)] sm:h-[calc(100vh-12rem)] flex flex-col overflow-hidden">
+      {/* Current Flashcard - Fits without scrolling */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 flex flex-col justify-center p-2 sm:p-6 space-y-2 sm:space-y-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              initial={{ x: 300, opacity: 0, scale: 0.9 }}
+              animate={{ x: 0, opacity: 1, scale: 1 }}
+              exit={{ x: -300, opacity: 0, scale: 0.9 }}
+              transition={{
+                type: 'spring',
+                stiffness: 300,
+                damping: 30,
+              }}
+              className="flex-1 flex flex-col min-h-0 overflow-hidden"
+            >
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                {renderFlashcard()}
+              </div>
             </motion.div>
-          </motion.div>
-        )}
+          </AnimatePresence>
+
+          {/* Next Card Button */}
+          {answered && (
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="flex-shrink-0 flex flex-col items-center mt-2 sm:mt-6"
+            >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button onClick={handleNextCard} className="w-full sm:w-48 relative overflow-hidden group">
+                  <span className="relative z-10">Next Card</span>
+                  <motion.span
+                    className="absolute inset-0 bg-white/20"
+                    initial={{ x: '-100%' }}
+                    whileHover={{ x: '100%' }}
+                    transition={{ duration: 0.5 }}
+                  />
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+        </div>
       </div>
 
-      {/* Progress Header - Pinned to Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg z-50">
-        <div className="flex justify-center py-3 sm:py-4">
+      {/* Progress Header - Fixed at Bottom */}
+      <div className="flex-shrink-0 bg-white border-t border-slate-200 shadow-lg z-50">
+        <div className="flex justify-center py-2 sm:py-4">
           <div className="w-full max-w-2xl mx-auto px-4 sm:px-6">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-sm sm:text-base font-semibold text-slate-900">
+            <div className="flex justify-between items-center mb-2 sm:mb-3">
+              <h2 className="text-xs sm:text-base font-semibold text-slate-900">
                 Study Session
               </h2>
               <motion.p

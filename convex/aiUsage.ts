@@ -5,8 +5,8 @@ import { query, mutation } from './_generated/server';
 
 // Free users get 10 AI generations per month
 const FREE_MONTHLY_LIMIT = 10;
-// Premium users get unlimited
-const PREMIUM_MONTHLY_LIMIT = Infinity;
+// Premium users get 1000 AI generations per month (hard limit)
+const PREMIUM_MONTHLY_LIMIT = 1000;
 
 /**
  * Get current month string in YYYY-MM format
@@ -52,18 +52,89 @@ export const canUseAI = query({
       userId: args.userId,
     });
 
-    const canUse = isPremium || usageCount < limit;
+    // Same check for both free and premium users
+    const canUse = usageCount < limit;
 
     return {
       canUse,
       usageCount,
-      limit: isPremium ? Infinity : FREE_MONTHLY_LIMIT,
+      limit, // Returns actual limit, not Infinity
+    };
+  },
+});
+
+/**
+ * Atomically check limit and increment usage in a single transaction
+ * This prevents race conditions where multiple requests could bypass limits
+ * Returns whether the increment was successful
+ */
+export const checkAndIncrementUsage = mutation({
+  args: { 
+    userId: v.string(), 
+    count: v.optional(v.number()) 
+  },
+  handler: async (ctx, args): Promise<{ 
+    success: boolean; 
+    usageCount: number; 
+    limit: number;
+    remaining: number;
+  }> => {
+    // Check premium status FIRST
+    const isPremium = await ctx.runQuery(api.subscriptions.isPremium, {
+      userId: args.userId,
+    });
+
+    const limit = isPremium ? PREMIUM_MONTHLY_LIMIT : FREE_MONTHLY_LIMIT;
+    const month = getCurrentMonth();
+    const increment = args.count || 1;
+
+    // Get current usage (atomic read within transaction)
+    const existing = await ctx.db
+      .query('aiUsage')
+      .withIndex('by_user_and_month', (q) =>
+        q.eq('userId', args.userId).eq('month', month),
+      )
+      .first();
+
+    const currentCount = existing?.count || 0;
+    const newCount = currentCount + increment;
+
+    // Check limit BEFORE incrementing (atomic check)
+    if (newCount > limit) {
+      return {
+        success: false,
+        usageCount: currentCount,
+        limit,
+        remaining: Math.max(0, limit - currentCount),
+      };
+    }
+
+    // Atomically increment (or create if doesn't exist)
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        count: newCount,
+      });
+    } else {
+      await ctx.db.insert('aiUsage', {
+        userId: args.userId,
+        month,
+        count: increment,
+      });
+    }
+
+    return {
+      success: true,
+      usageCount: newCount,
+      limit,
+      remaining: limit - newCount,
     };
   },
 });
 
 /**
  * Increment AI usage count for current month
+ * NOTE: This is kept for backward compatibility but should use checkAndIncrementUsage instead
+ * @deprecated Use checkAndIncrementUsage for atomic limit checking
  */
 export const incrementUsage = mutation({
   args: { userId: v.string(), count: v.optional(v.number()) },
@@ -124,11 +195,10 @@ export const getUsageStats = query({
 
     return {
       usageCount,
-      limit: isPremium ? Infinity : limit,
+      limit, // Returns actual limit, not Infinity
       isPremium,
-      canUse: isPremium || usageCount < limit,
-      remaining: isPremium ? Infinity : Math.max(0, limit - usageCount),
+      canUse: usageCount < limit, // Same check for both free and premium
+      remaining: Math.max(0, limit - usageCount),
     };
   },
 });
-

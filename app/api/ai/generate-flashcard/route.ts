@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check rate limit
+    // Check rate limit (per-minute protection)
     const rateLimit = rateLimiters.aiGeneration(authenticatedUserId);
     if (!rateLimit.success) {
       return NextResponse.json(
@@ -50,30 +50,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use the authenticated userId (not from request body)
-    const canUse = await convex.query(api.aiUsage.canUseAI, { userId: authenticatedUserId });
+    // ✅ ATOMIC: Check limit AND reserve a slot BEFORE generating
+    // This prevents race conditions where multiple requests could bypass limits
+    const usageCheck = await convex.mutation(
+      api.aiUsage.checkAndIncrementUsage,
+      { userId: authenticatedUserId, count: 1 }
+    );
 
-    if (!canUse.canUse) {
+    if (!usageCheck.success) {
       return NextResponse.json(
         {
           error: 'AI_GENERATION_LIMIT_REACHED',
-          message: `You've reached your monthly limit of ${canUse.limit} AI generations. Upgrade to Premium for unlimited AI generations!`,
-          usageCount: canUse.usageCount,
-          limit: canUse.limit,
+          message: `You've reached your monthly limit of ${usageCheck.limit} AI generations.${usageCheck.remaining === 0 ? '' : ` You have ${usageCheck.remaining} remaining.`}`,
+          usageCount: usageCheck.usageCount,
+          limit: usageCheck.limit,
+          remaining: usageCheck.remaining,
         },
         { status: 403 },
       );
     }
 
-    // Generate flashcard using AI
+    // Generate flashcard using AI (slot is already reserved)
     const flashcard = await generateFlashcard(topic.trim(), context?.trim());
-
-    // Increment usage count using authenticated userId
-    await convex.mutation(api.aiUsage.incrementUsage, { userId: authenticatedUserId, count: 1 });
 
     return NextResponse.json({
       success: true,
       flashcard,
+      usage: {
+        count: usageCheck.usageCount,
+        limit: usageCheck.limit,
+        remaining: usageCheck.remaining,
+      },
     });
   } catch (error) {
     logError('Error generating flashcard', error);

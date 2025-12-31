@@ -4,6 +4,10 @@ import { auth } from '@clerk/nextjs/server';
 import { transformFlashcard } from '@/lib/ai/openai';
 import { rateLimiters } from '@/lib/rateLimit';
 import { logError } from '@/lib/logger';
+import { ConvexHttpClient } from 'convex/browser';
+import { api } from '@/convex/_generated/api';
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,7 +59,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Transform flashcard using AI
+    // ✅ ATOMIC: Reserve a slot BEFORE transforming
+    const usageCheck = await convex.mutation(
+      api.aiUsage.checkAndIncrementUsage,
+      { userId, count: 1 }
+    );
+
+    if (!usageCheck.success) {
+      return NextResponse.json(
+        {
+          error: 'AI_GENERATION_LIMIT_REACHED',
+          message: `You've reached your monthly limit of ${usageCheck.limit} AI generations.`,
+          usageCount: usageCheck.usageCount,
+          limit: usageCheck.limit,
+          remaining: usageCheck.remaining,
+        },
+        { status: 403 },
+      );
+    }
+
+    // Transform flashcard using AI (slot is already reserved)
     const transformed = await transformFlashcard(
       question,
       typeof answer === 'string' ? answer : answer.join(', '),
@@ -66,6 +89,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       flashcard: transformed,
+      usage: {
+        count: usageCheck.usageCount,
+        limit: usageCheck.limit,
+        remaining: usageCheck.remaining,
+      },
     });
   } catch (error) {
     logError('Error transforming flashcard', error);

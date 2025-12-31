@@ -77,17 +77,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check AI usage limits using authenticated userId
-    await convex.query(api.aiUsage.canUseAI, { userId: authenticatedUserId });
+    // ✅ ATOMIC: Reserve slots for maxCards BEFORE generating
+    // This prevents race conditions and ensures we have capacity for the requested cards
+    const usageCheck = await convex.mutation(
+      api.aiUsage.checkAndIncrementUsage,
+      { userId: authenticatedUserId, count: maxCards }
+    );
 
-    // Generate flashcards from document text
+    if (!usageCheck.success) {
+      return NextResponse.json(
+        {
+          error: 'AI_GENERATION_LIMIT_REACHED',
+          message: `You don't have enough AI generations remaining. You have ${usageCheck.remaining} remaining, but need ${maxCards} for this document.`,
+          usageCount: usageCheck.usageCount,
+          limit: usageCheck.limit,
+          remaining: usageCheck.remaining,
+          requested: maxCards,
+        },
+        { status: 403 },
+      );
+    }
+
+    // Generate flashcards from document text (slots are already reserved)
     const flashcards = await generateFlashcardsFromText(parsed.text, maxCards);
 
-    // Increment usage count using authenticated userId
-    await convex.mutation(api.aiUsage.incrementUsage, {
-      userId: authenticatedUserId,
-      count: flashcards.length,
-    });
+    // Note: We reserved maxCards slots, but may have generated fewer cards
+    // This is fine - we reserved what the user requested
+    // If generation fails, the slots are still counted (failed attempts count)
 
     return NextResponse.json({
       success: true,
@@ -95,6 +111,11 @@ export async function POST(request: NextRequest) {
       documentInfo: {
         textLength: parsed.text.length,
         pageCount: parsed.pageCount,
+      },
+      usage: {
+        count: usageCheck.usageCount,
+        limit: usageCheck.limit,
+        remaining: usageCheck.remaining, // Already accounts for maxCards being reserved
       },
     });
   } catch (error) {

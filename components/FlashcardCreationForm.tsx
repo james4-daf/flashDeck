@@ -13,9 +13,10 @@ import { Input } from '@/components/ui/input';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useUser } from '@clerk/nextjs';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { useState } from 'react';
 import { UpgradeModal } from './UpgradeModal';
+import { Sparkles } from 'lucide-react';
 
 type FlashcardType =
   | 'basic'
@@ -48,8 +49,16 @@ export function FlashcardCreationForm({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showAIDialog, setShowAIDialog] = useState(false);
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiContext, setAiContext] = useState('');
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   const createFlashcard = useMutation(api.flashcards.createFlashcard);
+  const usageStats = useQuery(
+    api.aiUsage.getUsageStats,
+    user?.id ? { userId: user.id } : 'skip',
+  );
 
   const resetForm = () => {
     setType('basic');
@@ -60,6 +69,66 @@ export function FlashcardCreationForm({
     setCategory('');
     setTech('');
     setError(null);
+    setAiTopic('');
+    setAiContext('');
+  };
+
+  const handleAIGenerate = async () => {
+    if (!user?.id) return;
+    if (!aiTopic.trim()) {
+      setError('Please enter a topic for AI generation');
+      return;
+    }
+
+    setAiGenerating(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/ai/generate-flashcard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: aiTopic.trim(),
+          context: aiContext.trim() || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.error === 'AI_GENERATION_LIMIT_REACHED') {
+          setError(data.message);
+          setShowUpgradeModal(true);
+          setShowAIDialog(false);
+          return;
+        }
+        throw new Error(data.message || 'Failed to generate flashcard');
+      }
+
+      if (data.success && data.flashcard) {
+        // Pre-fill form with AI-generated content
+        setQuestion(data.flashcard.question);
+        setAnswer(data.flashcard.answer);
+        if (data.flashcard.category) {
+          setCategory(data.flashcard.category);
+        }
+        if (data.flashcard.tech) {
+          setTech(data.flashcard.tech);
+        }
+        setType('basic'); // AI generates basic cards by default
+        setShowAIDialog(false);
+        setAiTopic('');
+        setAiContext('');
+      }
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to generate flashcard';
+      setError(errorMessage);
+    } finally {
+      setAiGenerating(false);
+    }
   };
 
   const handleAddOption = () => {
@@ -212,6 +281,29 @@ export function FlashcardCreationForm({
                 <option value="fill_blank">Fill in the Blank</option>
                 <option value="code_snippet">Code Snippet</option>
               </select>
+            </div>
+
+            {/* AI Generation Button */}
+            <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-900">Generate with AI</p>
+                <p className="text-xs text-blue-700">
+                  {usageStats
+                    ? `You've used ${usageStats.usageCount} of ${usageStats.isPremium ? '∞' : usageStats.limit} AI generations this month`
+                    : 'Loading usage...'}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAIDialog(true)}
+                disabled={loading || (usageStats && !usageStats.canUse)}
+                className="gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate
+              </Button>
             </div>
 
             {/* Question */}
@@ -389,6 +481,73 @@ export function FlashcardCreationForm({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Generation Dialog */}
+      <Dialog open={showAIDialog} onOpenChange={setShowAIDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate Flashcard with AI</DialogTitle>
+            <DialogDescription>
+              Enter a topic and optional context. AI will generate a question and answer for you.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="ai-topic" className="text-sm font-medium">
+                Topic <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="ai-topic"
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+                placeholder="e.g., JavaScript closures, React hooks, CSS flexbox"
+                disabled={aiGenerating}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="ai-context" className="text-sm font-medium">
+                Additional Context (optional)
+              </label>
+              <textarea
+                id="ai-context"
+                value={aiContext}
+                onChange={(e) => setAiContext(e.target.value)}
+                placeholder="Provide any additional context or specific focus areas..."
+                rows={3}
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={aiGenerating}
+              />
+            </div>
+            {error && error.includes('AI') && (
+              <div className="rounded-md bg-red-50 border border-red-200 p-3">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowAIDialog(false);
+                  setAiTopic('');
+                  setAiContext('');
+                  setError(null);
+                }}
+                disabled={aiGenerating}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleAIGenerate}
+                disabled={aiGenerating || !aiTopic.trim()}
+              >
+                {aiGenerating ? 'Generating...' : 'Generate'}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

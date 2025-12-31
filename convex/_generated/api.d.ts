@@ -13,6 +13,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as aiUsage from "../aiUsage.js";
 import type * as decks from "../decks.js";
 import type * as flashcards from "../flashcards.js";
 import type * as sessionAttempts from "../sessionAttempts.js";
@@ -29,6 +30,7 @@ import type * as userProgress from "../userProgress.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  aiUsage: typeof aiUsage;
   decks: typeof decks;
   flashcards: typeof flashcards;
   sessionAttempts: typeof sessionAttempts;

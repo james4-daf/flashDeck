@@ -35,7 +35,6 @@ export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id,
           billingCycle: selectedPlan,
         }),
       });

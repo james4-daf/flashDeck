@@ -106,8 +106,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`antialiased ${rubik.className}`}>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`antialiased ${rubik.className}`}
+        suppressHydrationWarning
+      >
         <ClerkProvider>
           <ConvexClientProvider>{children}</ConvexClientProvider>
         </ClerkProvider>

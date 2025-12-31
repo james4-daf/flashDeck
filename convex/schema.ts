@@ -135,4 +135,13 @@ export default defineSchema({
   })
     .index('by_premium', ['isPremium'])
     .index('by_slug', ['slug']),
+
+  // AI Usage tracking - track AI generation usage per user per month
+  aiUsage: defineTable({
+    userId: v.string(), // Clerk user ID
+    month: v.string(), // Format: "YYYY-MM" (e.g., "2024-01")
+    count: v.number(), // Number of AI generations this month
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_and_month', ['userId', 'month']),
 });

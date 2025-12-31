@@ -46,10 +46,7 @@ function ProfileContent() {
       const response = await fetch('/api/stripe/create-portal-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          customerId: subscriptionStatus.stripeCustomerId,
-        }),
+        body: JSON.stringify({}),
       });
       const data = await response.json();
       if (data.url) window.location.href = data.url;

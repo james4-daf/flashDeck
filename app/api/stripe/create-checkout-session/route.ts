@@ -1,5 +1,6 @@
 // app/api/stripe/create-checkout-session/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -19,15 +20,18 @@ function isValidPriceId(priceId: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId, priceId, billingCycle } = body;
+    // Verify authentication - this is the security fix
+    const { userId: authenticatedUserId } = await auth();
 
-    if (!userId) {
+    if (!authenticatedUserId) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 },
+        { error: 'Unauthorized', message: 'You must be logged in to purchase a subscription' },
+        { status: 401 },
       );
     }
+
+    const body = await request.json();
+    const { priceId, billingCycle } = body;
 
     // Determine price ID if not provided
     const finalPriceId =
@@ -45,7 +49,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create checkout session
+    // Create checkout session using authenticated userId
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -57,9 +61,9 @@ export async function POST(request: NextRequest) {
       ],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pricing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/#pricing?canceled=true`,
-      client_reference_id: userId,
+      client_reference_id: authenticatedUserId,
       metadata: {
-        userId,
+        userId: authenticatedUserId,
         billingCycle: billingCycle || (finalPriceId === PRICE_IDS.annual ? 'annual' : 'monthly'),
       },
     });
@@ -74,4 +78,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -9,8 +9,9 @@ import './globals.css';
 
 const rubik = Rubik({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600'],
   display: 'swap',
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -106,11 +107,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`antialiased ${rubik.className}`}
-        suppressHydrationWarning
-      >
+    <html lang="en">
+      <body className={`antialiased ${rubik.className}`}>
         <ClerkProvider>
           <ConvexClientProvider>{children}</ConvexClientProvider>
         </ClerkProvider>

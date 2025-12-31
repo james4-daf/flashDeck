@@ -67,10 +67,10 @@ Make the question clear and educational. The answer should be concise but comple
         max_tokens: 500,
       });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No response from OpenAI');
-    }
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
 
       const result = JSON.parse(content) as FlashcardGenerationResult;
       
@@ -118,14 +118,6 @@ export async function generateFlashcardsFromText(
   text: string,
   maxCards: number = 10,
 ): Promise<FlashcardGenerationResult[]> {
-  // Split text into chunks if too long (max ~3000 tokens per chunk)
-  const chunkSize = 3000;
-  const chunks: string[] = [];
-  
-  for (let i = 0; i < text.length; i += chunkSize) {
-    chunks.push(text.slice(i, i + chunkSize));
-  }
-
   const prompt = `Extract key educational concepts from the following text and create ${maxCards} flashcards.
 
 Text:
@@ -167,18 +159,18 @@ Create diverse, high-quality flashcards covering the main concepts.`;
         max_tokens: 2000,
       });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No response from OpenAI');
-    }
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
 
-    const result = JSON.parse(content) as DocumentFlashcardsResult;
-    
-    if (!Array.isArray(result.flashcards)) {
-      throw new Error('Invalid flashcards array from AI');
-    }
+      const result = JSON.parse(content) as DocumentFlashcardsResult;
+      
+      if (!Array.isArray(result.flashcards)) {
+        throw new Error('Invalid flashcards array from AI');
+      }
 
-    // Validate and limit results
+      // Validate and limit results
       const validFlashcards = result.flashcards
         .filter((card) => card.question && card.answer)
         .slice(0, maxCards);
@@ -293,17 +285,17 @@ Current Answer: ${currentAnswer}
         max_tokens: 800,
       });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No response from OpenAI');
-    }
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
 
-    const result = JSON.parse(content) as FlashcardTransformResult;
-    
-    // Validate required fields
-    if (!result.question || !result.answer || !result.type) {
-      throw new Error('Invalid flashcard structure from AI');
-    }
+      const result = JSON.parse(content) as FlashcardTransformResult;
+      
+      // Validate required fields
+      if (!result.question || !result.answer || !result.type) {
+        throw new Error('Invalid flashcard structure from AI');
+      }
 
       // Ensure type matches target
       result.type = targetType;

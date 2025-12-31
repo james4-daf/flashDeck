@@ -1,25 +1,15 @@
 'use client';
 
 import { AppHeader } from '@/components/AppHeader';
-import { CardTransformDialog } from '@/components/CardTransformDialog';
-import { DocumentUploadDialog } from '@/components/DocumentUploadDialog';
 import { FlashcardCreationForm } from '@/components/FlashcardCreationForm';
 import { LibraryFlashcard } from '@/components/LibraryFlashcard';
 import { StudySession } from '@/components/StudySession';
 import { Button } from '@/components/ui/button';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import type { ConvexFlashcard } from '@/lib/types';
 import { useUser } from '@clerk/nextjs';
 import { Authenticated, useMutation, useQuery } from 'convex/react';
-import {
-  ArrowLeft,
-  BookOpen,
-  Plus,
-  Sparkles,
-  Trash2,
-  Upload,
-} from 'lucide-react';
+import { ArrowLeft, BookOpen, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -37,11 +27,7 @@ function DeckDetailContent() {
   const params = useParams();
   const deckId = params?.deckId as Id<'decks'>;
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [isStudying, setIsStudying] = useState(false);
-  const [transformCard, setTransformCard] = useState<ConvexFlashcard | null>(
-    null,
-  );
 
   const deck = useQuery(api.decks.getDeck, deckId ? { deckId } : 'skip');
   const removeFlashcard = useMutation(api.decks.removeFlashcardFromDeck);
@@ -49,18 +35,6 @@ function DeckDetailContent() {
   const handleFlashcardCreated = () => {
     // Refresh will happen automatically via Convex real-time updates
     setShowCreateForm(false);
-  };
-
-  const handleFlashcardsUploaded = () => {
-    setShowUploadDialog(false);
-  };
-
-  const handleTransformCard = (flashcard: ConvexFlashcard) => {
-    setTransformCard(flashcard);
-  };
-
-  const handleTransformComplete = () => {
-    setTransformCard(null);
   };
 
   const handleRemoveFlashcard = async (
@@ -217,7 +191,7 @@ function DeckDetailContent() {
                 )}
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2">
               {deck.flashcards.length > 0 && (
                 <Button
                   onClick={handleStartStudying}
@@ -230,14 +204,6 @@ function DeckDetailContent() {
               <Button onClick={() => setShowCreateForm(true)} variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Flashcard
-              </Button>
-              <Button
-                onClick={() => setShowUploadDialog(true)}
-                variant="outline"
-                className="border-blue-200 text-blue-700 hover:bg-blue-50"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Document
               </Button>
             </div>
           </div>
@@ -271,26 +237,15 @@ function DeckDetailContent() {
               {deck.flashcards.map((flashcard) => (
                 <div key={flashcard._id} className="relative">
                   <LibraryFlashcard flashcard={flashcard} />
-                  <div className="absolute top-4 right-4 flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      title="Transform card format"
-                      onClick={() => handleTransformCard(flashcard)}
-                    >
-                      <Sparkles className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      title="Remove from deck"
-                      onClick={(e) => handleRemoveFlashcard(flashcard._id, e)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute top-4 right-4 h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Remove from deck"
+                    onClick={(e) => handleRemoveFlashcard(flashcard._id, e)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
             </div>
@@ -304,25 +259,6 @@ function DeckDetailContent() {
         deckId={deckId}
         onFlashcardCreated={handleFlashcardCreated}
       />
-
-      <DocumentUploadDialog
-        open={showUploadDialog}
-        onOpenChange={setShowUploadDialog}
-        deckId={deckId}
-        onFlashcardsCreated={handleFlashcardsUploaded}
-      />
-
-      {transformCard && (
-        <CardTransformDialog
-          open={!!transformCard}
-          onOpenChange={(open) => {
-            if (!open) setTransformCard(null);
-          }}
-          flashcard={transformCard}
-          deckId={deckId}
-          onTransformed={handleTransformComplete}
-        />
-      )}
     </div>
   );
 }

@@ -287,11 +287,11 @@ export function FlashcardCreationForm({
             <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
               <div className="flex-1">
                 <p className="text-sm font-medium text-blue-900">Generate with AI</p>
-                <p className="text-xs text-blue-700">
-                  {usageStats
-                    ? `You've used ${usageStats.usageCount} of ${usageStats.isPremium ? '∞' : usageStats.limit} AI generations this month`
-                    : 'Loading usage...'}
-                </p>
+                {usageStats && !usageStats.isPremium && (
+                  <p className="text-xs text-blue-700">
+                    You&apos;ve used {usageStats.usageCount} of {usageStats.limit} AI generations this month
+                  </p>
+                )}
               </div>
               <Button
                 type="button"

@@ -1,6 +1,7 @@
 'use client';
 
 import { AppHeader } from '@/components/AppHeader';
+import { OnboardingTour, type OnboardingStep } from '@/components/OnboardingTour';
 import { StudySession } from '@/components/StudySession';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,7 @@ import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
 import { Authenticated, useMutation, useQuery } from 'convex/react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Dashboard() {
   return (
@@ -18,6 +19,45 @@ export default function Dashboard() {
     </Authenticated>
   );
 }
+
+// Onboarding step configuration
+const onboardingSteps: OnboardingStep[] = [
+  {
+    id: 'welcome',
+    title: 'Welcome to FlashDeck! 🎉',
+    description: 'Let\'s take a quick 2-minute tour of your dashboard to get you started.',
+    selector: null,
+    position: 'center',
+  },
+  {
+    id: 'study-now',
+    title: 'Start Studying',
+    description: 'This is your main study area. When you have flashcards due for review, click "Start Studying" to begin a session. FlashDeck uses spaced repetition to help you learn efficiently.',
+    selector: '[data-onboarding="study-now-card"]',
+    position: 'right',
+  },
+  {
+    id: 'progress',
+    title: 'Track Your Progress',
+    description: 'Here you can see your stats at a glance: total cards, how many are due now, and your mastery progress. Keep an eye on this to see your improvement over time!',
+    selector: '[data-onboarding="progress-card"]',
+    position: 'left',
+  },
+  {
+    id: 'quick-actions',
+    title: 'Quick Actions',
+    description: 'Use these quick links to browse the library, create custom decks, or manage your important cards. This is where you\'ll add new flashcards to study.',
+    selector: '[data-onboarding="quick-actions-card"]',
+    position: 'top',
+  },
+  {
+    id: 'navigation',
+    title: 'Navigation',
+    description: 'Use the header to navigate to your decks, browse the community library, or access your profile settings. Everything you need is just a click away!',
+    selector: '[data-onboarding="header-nav"]',
+    position: 'bottom',
+  },
+];
 
 function DashboardContent() {
   const { user } = useUser();
@@ -28,7 +68,9 @@ function DashboardContent() {
   const [selectedList, setSelectedList] = useState<string | undefined>(
     undefined,
   );
-  const flashcards = useQuery(api.flashcards.getAllFlashcards);
+  const flashcards = useQuery(api.flashcards.getUserFlashcards, {
+    userId: user?.id || '',
+  });
 
   // Fetch all user progress for accurate dashboard stats
   const userProgress = useQuery(api.userProgress.getAllUserProgress, {
@@ -40,9 +82,31 @@ function DashboardContent() {
     userId: user?.id || '',
   });
 
+  // Check if onboarding should be shown
+  const shouldShowOnboarding = useQuery(api.userPreferences.shouldShowOnboarding, {
+    userId: user?.id || '',
+  });
+
+  const markOnboardingComplete = useMutation(
+    api.userPreferences.markOnboardingComplete,
+  );
+
+  const ensureUserExists = useMutation(api.users.ensureUserExists);
+
   const createSampleFlashcards = useMutation(
     api.flashcards.createSampleFlashcards,
   );
+
+  // Ensure user exists in users table on mount (uses JWT token, passes email if available)
+  useEffect(() => {
+    if (user?.id) {
+      ensureUserExists({
+        email: user.emailAddresses?.[0]?.emailAddress,
+      }).catch((error) => {
+        console.error('Error ensuring user exists:', error);
+      });
+    }
+  }, [user?.id, user?.emailAddresses, ensureUserExists]);
 
   const handleCreateSamples = async () => {
     try {
@@ -68,6 +132,16 @@ function DashboardContent() {
     setIsStudying(false);
     setStudyMode('normal');
     setSelectedList(undefined);
+  };
+
+  const handleOnboardingComplete = async () => {
+    if (user?.id) {
+      try {
+        await markOnboardingComplete({ userId: user.id });
+      } catch (error) {
+        console.error('Error marking onboarding complete:', error);
+      }
+    }
   };
 
   if (isStudying) {
@@ -169,6 +243,12 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <AppHeader />
+      {shouldShowOnboarding === true && (
+        <OnboardingTour
+          steps={onboardingSteps}
+          onComplete={handleOnboardingComplete}
+        />
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Main dashboard cards in a flex row */}
@@ -176,7 +256,7 @@ function DashboardContent() {
         {/* Rest of dashboard (Progress, Study Now, etc.) */}
         <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3 my-4 sm:my-6">
           {/* Study Now Card */}
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2" data-onboarding="study-now-card">
             <CardHeader>
               <CardTitle className="text-xl sm:text-2xl">
                 Ready to Study?{' '}
@@ -332,7 +412,7 @@ function DashboardContent() {
           </Card>
 
           {/* Progress Overview */}
-          <Card>
+          <Card data-onboarding="progress-card">
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl">
                 Your Progress
@@ -405,7 +485,7 @@ function DashboardContent() {
 
         <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
           {/* Quick Actions */}
-          <Card className="flex-1">
+          <Card className="flex-1" data-onboarding="quick-actions-card">
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl">
                 Quick Actions

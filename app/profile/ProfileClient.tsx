@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/convex/_generated/api';
 import { SignedIn, SignedOut, SignOutButton, useUser } from '@clerk/nextjs';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -39,6 +39,15 @@ function ProfileContent() {
     userId: user?.id || '',
   });
 
+  // Fetch user preferences for onboarding status
+  const userPreferences = useQuery(api.userPreferences.getUserPreferences, {
+    userId: user?.id || '',
+  });
+
+  const resetOnboarding = useMutation(api.userPreferences.resetOnboarding);
+
+  const router = useRouter();
+
   const handleManageSubscription = async () => {
     if (!user?.id || !subscriptionStatus?.stripeCustomerId) return;
     setLoading(true);
@@ -54,6 +63,17 @@ function ProfileContent() {
     } catch (err) {
       console.error('Error creating portal session:', err);
       setLoading(false);
+    }
+  };
+
+  const handleReplayOnboarding = async () => {
+    if (!user?.id) return;
+    try {
+      await resetOnboarding({ userId: user.id });
+      // Redirect to dashboard where onboarding will be shown
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error resetting onboarding:', error);
     }
   };
 
@@ -197,6 +217,50 @@ function ProfileContent() {
                     Sign Out
                   </Button>
                 </SignOutButton>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Onboarding Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Onboarding</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Status
+                </label>
+                <div className="mt-1">
+                  {userPreferences?.hasCompletedOnboarding ? (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        ✓ Completed
+                      </span>
+                      {userPreferences.completedOnboardingAt && (
+                        <span className="text-sm text-slate-500">
+                          on {formatDate(userPreferences.completedOnboardingAt)}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                      Not Completed
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="pt-4 border-t">
+                <Button
+                  onClick={handleReplayOnboarding}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Replay Onboarding Tour
+                </Button>
+                <p className="text-xs text-slate-500 mt-2">
+                  Take the tour again to learn about FlashDeck features
+                </p>
               </div>
             </CardContent>
           </Card>

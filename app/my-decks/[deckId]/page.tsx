@@ -1,6 +1,7 @@
 'use client';
 
 import { AppHeader } from '@/components/AppHeader';
+import { DocumentUploadDialog } from '@/components/DocumentUploadDialog';
 import { FlashcardCreationForm } from '@/components/FlashcardCreationForm';
 import { LibraryFlashcard } from '@/components/LibraryFlashcard';
 import { StudySession } from '@/components/StudySession';
@@ -9,7 +10,7 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useUser } from '@clerk/nextjs';
 import { Authenticated, useMutation, useQuery } from 'convex/react';
-import { ArrowLeft, BookOpen, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Plus, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -27,6 +28,7 @@ function DeckDetailContent() {
   const params = useParams();
   const deckId = params?.deckId as Id<'decks'>;
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [isStudying, setIsStudying] = useState(false);
 
   const deck = useQuery(api.decks.getDeck, deckId ? { deckId } : 'skip');
@@ -201,6 +203,13 @@ function DeckDetailContent() {
                   Study Deck
                 </Button>
               )}
+              <Button
+                onClick={() => setShowUploadDialog(true)}
+                variant="outline"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Document
+              </Button>
               <Button onClick={() => setShowCreateForm(true)} variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Flashcard
@@ -258,6 +267,12 @@ function DeckDetailContent() {
         onOpenChange={setShowCreateForm}
         deckId={deckId}
         onFlashcardCreated={handleFlashcardCreated}
+      />
+      <DocumentUploadDialog
+        open={showUploadDialog}
+        onOpenChange={setShowUploadDialog}
+        deckId={deckId}
+        onFlashcardsCreated={handleFlashcardCreated}
       />
     </div>
   );

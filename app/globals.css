@@ -141,6 +141,16 @@
   }
 }
 
+@layer utilities {
+  /* Safe area insets for mobile notch support */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 @layer components {
   /* Enhanced prose styles */
   .prose {

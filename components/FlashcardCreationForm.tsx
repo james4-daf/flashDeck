@@ -14,9 +14,9 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useUser } from '@clerk/nextjs';
 import { useMutation, useQuery } from 'convex/react';
+import { Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { UpgradeModal } from './UpgradeModal';
-import { Sparkles } from 'lucide-react';
 
 type FlashcardType =
   | 'basic'
@@ -236,7 +236,8 @@ export function FlashcardCreationForm({
         onFlashcardCreated();
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create flashcard';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to create flashcard';
       setError(errorMessage);
 
       // If it's a limit error, show upgrade modal
@@ -286,10 +287,13 @@ export function FlashcardCreationForm({
             {/* AI Generation Button */}
             <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
               <div className="flex-1">
-                <p className="text-sm font-medium text-blue-900">Generate with AI</p>
+                <p className="text-sm font-medium text-blue-900">
+                  Generate with AI
+                </p>
                 {usageStats && !usageStats.isPremium && (
                   <p className="text-xs text-blue-700">
-                    You&apos;ve used {usageStats.usageCount} of {usageStats.limit} AI generations this month
+                    You&apos;ve used {usageStats.usageCount} of{' '}
+                    {usageStats.limit} AI generations this month
                   </p>
                 )}
               </div>
@@ -308,7 +312,10 @@ export function FlashcardCreationForm({
 
             {/* Question */}
             <div className="space-y-2">
-              <label htmlFor="flashcard-question" className="text-sm font-medium">
+              <label
+                htmlFor="flashcard-question"
+                className="text-sm font-medium"
+              >
                 Question <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -349,7 +356,9 @@ export function FlashcardCreationForm({
                     />
                     <Input
                       value={option}
-                      onChange={(e) => handleOptionChange(index, e.target.value)}
+                      onChange={(e) =>
+                        handleOptionChange(index, e.target.value)
+                      }
                       placeholder={`Option ${index + 1}`}
                       className="flex-1"
                       disabled={loading}
@@ -414,7 +423,10 @@ export function FlashcardCreationForm({
               </div>
             ) : (
               <div className="space-y-2">
-                <label htmlFor="flashcard-answer" className="text-sm font-medium">
+                <label
+                  htmlFor="flashcard-answer"
+                  className="text-sm font-medium"
+                >
                   Answer <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -433,7 +445,10 @@ export function FlashcardCreationForm({
             {/* Optional Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="flashcard-category" className="text-sm font-medium">
+                <label
+                  htmlFor="flashcard-category"
+                  className="text-sm font-medium"
+                >
                   Category (optional)
                 </label>
                 <Input
@@ -490,7 +505,8 @@ export function FlashcardCreationForm({
           <DialogHeader>
             <DialogTitle>Generate Flashcard with AI</DialogTitle>
             <DialogDescription>
-              Enter a topic and optional context. AI will generate a question and answer for you.
+              Enter a topic and optional context. AI will generate a question
+              and answer for you.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -560,4 +576,3 @@ export function FlashcardCreationForm({
     </>
   );
 }
-

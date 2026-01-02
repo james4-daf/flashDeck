@@ -144,4 +144,20 @@ export default defineSchema({
   })
     .index('by_user', ['userId'])
     .index('by_user_and_month', ['userId', 'month']),
+
+  // User Preferences - track user settings and onboarding status
+  userPreferences: defineTable({
+    userId: v.string(), // Clerk user ID
+    hasCompletedOnboarding: v.boolean(),
+    completedOnboardingAt: v.optional(v.number()), // timestamp
+  })
+    .index('by_user', ['userId']),
+
+  // Users - track user accounts from Clerk
+  users: defineTable({
+    clerkId: v.optional(v.string()), // Clerk user ID (optional for migration compatibility)
+    email: v.string(),
+  })
+    .index('by_email', ['email'])
+    .index('by_clerk_id', ['clerkId']),
 });

@@ -13,6 +13,31 @@ export const getAllFlashcards = query({
   },
 });
 
+// Get flashcards visible to a specific user
+// Returns: library cards (no deckId) + cards from decks owned by the user
+export const getUserFlashcards = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    // Get all flashcards
+    const allCards = await ctx.db.query('flashcards').collect();
+    
+    // Get all decks owned by this user
+    const userDecks = await ctx.db
+      .query('decks')
+      .withIndex('by_creator', (q) => q.eq('createdBy', args.userId))
+      .collect();
+    
+    const userDeckIds = new Set(userDecks.map((deck) => deck._id));
+    
+    // Filter: include library cards (no deckId) OR cards from user's decks
+    const userCards = allCards.filter(
+      (card) => !card.deckId || userDeckIds.has(card.deckId),
+    );
+    
+    return userCards;
+  },
+});
+
 // Get all unique categories with counts (optimized)
 export const getAllCategories = query({
   args: {},

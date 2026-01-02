@@ -81,7 +81,7 @@ export function LandingContent() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
+      <nav className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50 safe-top">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center gap-2">
@@ -439,6 +439,12 @@ export function LandingContent() {
               >
                 Pricing
               </a>
+              <Link
+                href="/blog"
+                className="text-slate-600 hover:text-slate-900 text-sm"
+              >
+                Blog
+              </Link>
               <Link
                 href="/login"
                 className="text-slate-600 hover:text-slate-900 text-sm"

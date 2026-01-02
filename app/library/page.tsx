@@ -23,7 +23,10 @@ export default function LibraryPage() {
     undefined,
   );
 
-  const flashcards = useQuery(api.flashcards.getAllFlashcards);
+  const flashcards = useQuery(
+    api.flashcards.getUserFlashcards,
+    user?.id ? { userId: user.id } : 'skip',
+  );
   // Extract unique lists from all flashcards
   const allLists = Array.from(
     new Set((flashcards ?? []).flatMap((card) => card.lists ?? [])),
@@ -59,7 +62,7 @@ export default function LibraryPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <AppHeader />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
         <div className="mb-6 sm:mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
             Flashcard Library

@@ -332,19 +332,19 @@ export function StudySession({
     if (currentIndex >= shuffledCards.length) {
       // We're out of bounds - this shouldn't happen, but if it does, show completion
       return (
-        <Card className="w-full max-w-2xl mx-auto">
+        <Card className="w-full max-w-2xl md:max-w-3xl mx-auto">
           <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">
+            <CardTitle className="text-lg md:text-xl">
               Session Complete!
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-slate-600 mb-4 text-sm sm:text-base">
+            <p className="text-slate-600 mb-4 text-sm md:text-base">
               You&apos;ve completed all flashcards in this session.
             </p>
             <Button
               onClick={onComplete}
-              className="w-full py-3 sm:py-4 text-base sm:text-lg"
+              className="w-full md:w-auto py-3 md:py-4 text-base md:text-lg"
             >
               Back to Dashboard
             </Button>
@@ -643,10 +643,10 @@ export function StudySession({
   const cardStateInfo = getCardStateInfo();
 
   return (
-    <div className="relative h-[calc(100vh-10rem)] sm:h-[calc(100vh-12rem)] flex flex-col overflow-hidden">
+    <div className="relative h-[calc(100vh-10rem)] md:h-[calc(100vh-12rem)] flex flex-col overflow-hidden">
       {/* Current Flashcard - Fits without scrolling */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div className="flex-1 flex flex-col justify-center p-2 sm:p-6 space-y-2 sm:space-y-6">
+        <div className="flex-1 flex flex-col justify-center p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
@@ -672,10 +672,10 @@ export function StudySession({
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="flex-shrink-0 flex flex-col items-center mt-2 sm:mt-6"
+              className="flex-shrink-0 flex flex-col items-center mt-4 md:mt-6"
             >
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button onClick={handleNextCard} className="w-full sm:w-48 relative overflow-hidden group">
+                <Button onClick={handleNextCard} className="w-full md:w-48 relative overflow-hidden group">
                   <span className="relative z-10">Next Card</span>
                   <motion.span
                     className="absolute inset-0 bg-white/20"
@@ -690,12 +690,12 @@ export function StudySession({
         </div>
       </div>
 
-      {/* Progress Header - Fixed at Bottom */}
-      <div className="flex-shrink-0 bg-white border-t border-slate-200 shadow-lg z-50">
-        <div className="flex justify-center py-2 sm:py-4">
-          <div className="w-full max-w-2xl mx-auto px-4 sm:px-6">
-            <div className="flex justify-between items-center mb-2 sm:mb-3">
-              <h2 className="text-xs sm:text-base font-semibold text-slate-900">
+      {/* Progress Header - Fixed at Bottom (Mobile only) */}
+      <div className="md:hidden flex-shrink-0 bg-white border-t border-slate-200 shadow-lg z-50">
+        <div className="flex justify-center py-2">
+          <div className="w-full max-w-2xl mx-auto px-4">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xs font-semibold text-slate-900">
                 Study Session
               </h2>
               <motion.p
@@ -703,7 +703,7 @@ export function StudySession({
                 initial={{ scale: 1.2 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.3 }}
-                className="text-xs sm:text-sm font-medium text-slate-900"
+                className="text-xs font-medium text-slate-900"
               >
                 {accuracy}% accuracy
               </motion.p>

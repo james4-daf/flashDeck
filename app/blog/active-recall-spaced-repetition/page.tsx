@@ -1,3 +1,4 @@
+import { PublicNav } from '@/components/PublicNav';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, BookOpen, Brain, Target, TrendingUp } from 'lucide-react';
 import type { Metadata } from 'next';
@@ -102,21 +103,17 @@ export default function BlogPost() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="text-xl font-bold text-slate-900">
-              FlashDeck
-            </Link>
-            <Link href="/login">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav
+        maxWidth="narrow"
+        showLogo={false}
+        rightContent={
+          <Link href="/login">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              Get Started
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Article Content */}
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -222,11 +219,24 @@ export default function BlogPost() {
               reviews strategically to maximize retention.
             </p>
             <p className="text-lg text-slate-700 mb-4">
-              The concept is based on the <strong>forgetting curve</strong>,
-              discovered by German psychologist{' '}
+              The concept is based on the{' '}
+              <Link
+                href="/blog/the-forgetting-curve"
+                className="text-blue-600 hover:text-blue-700 underline font-medium"
+              >
+                forgetting curve
+              </Link>
+              , discovered by German psychologist{' '}
               <strong>Hermann Ebbinghaus</strong> in the 1880s. Ebbinghaus found
               that we forget information exponentially over time, but each time
-              we review it, the forgetting curve becomes less steep.
+              we review it, the forgetting curve becomes less steep. This is why{' '}
+              <Link
+                href="/blog/spaced-repetition-for-developers"
+                className="text-blue-600 hover:text-blue-700 underline font-medium"
+              >
+                spaced repetition for developers
+              </Link>{' '}
+              is so effective—it systematically addresses the forgetting curve.
             </p>
             <h3 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">
               How Spaced Repetition Works
@@ -270,9 +280,15 @@ export default function BlogPost() {
           <div className="prose prose-lg max-w-none">
             <p className="text-lg text-slate-700 mb-4">
               While both techniques are powerful on their own, combining active
-              recall with spaced repetition creates a{' '}
-              <strong>synergistic effect</strong> that dramatically improves
-              learning outcomes.
+              recall with{' '}
+              <Link
+                href="/blog/spaced-repetition-for-developers"
+                className="text-blue-600 hover:text-blue-700 underline font-medium"
+              >
+                spaced repetition
+              </Link>{' '}
+              creates a <strong>synergistic effect</strong> that dramatically
+              improves learning outcomes.
             </p>
             <h3 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">
               The Perfect Learning Loop

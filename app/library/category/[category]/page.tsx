@@ -1,6 +1,7 @@
 'use client';
 
 import { AppHeader } from '@/components/AppHeader';
+import { AttemptHistoryChart } from '@/components/AttemptHistoryChart';
 import { LibraryFlashcard } from '@/components/LibraryFlashcard';
 import { StudySession } from '@/components/StudySession';
 import { Accordion } from '@/components/ui/accordion';
@@ -21,6 +22,14 @@ export default function CategoryLibraryPage() {
   const flashcards = useQuery(
     api.flashcards.getFlashcardsByCategory,
     categoryName ? { category: categoryName } : 'skip',
+  );
+
+  // Get attempt history for this category
+  const attemptHistory = useQuery(
+    api.sessionAttempts.getCategoryAttemptHistory,
+    user?.id && categoryName
+      ? { userId: user.id, category: categoryName, days: 30 }
+      : 'skip',
   );
 
   const handleStartStudying = () => {
@@ -70,7 +79,8 @@ export default function CategoryLibraryPage() {
           <StudySession
             userId={user?.id || ''}
             onComplete={handleCompleteStudying}
-            studyMode="normal"
+            studyMode="category"
+            categoryName={categoryName}
           />
         </main>
       </div>
@@ -134,6 +144,14 @@ export default function CategoryLibraryPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Attempt History Chart - Now below the flashcards */}
+        {user?.id && attemptHistory !== undefined && (
+          <AttemptHistoryChart
+            data={attemptHistory}
+            categoryName={categoryName}
+          />
+        )}
       </main>
     </div>
   );

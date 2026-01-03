@@ -21,9 +21,10 @@ import { TrueFalseFlashcard } from './flashcard/TrueFalseFlashcard';
 interface StudySessionProps {
   userId: string;
   onComplete: () => void;
-  studyMode?: 'normal' | 'important' | 'list' | 'topic' | 'deck';
+  studyMode?: 'normal' | 'important' | 'list' | 'topic' | 'deck' | 'category';
   listName?: string;
   topicName?: string;
+  categoryName?: string;
   deckId?: string;
 }
 
@@ -33,6 +34,7 @@ export function StudySession({
   studyMode = 'normal',
   listName,
   topicName,
+  categoryName,
   deckId,
 }: StudySessionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -86,6 +88,17 @@ export function StudySession({
     api.decks.getDeckFlashcardsForStudying,
     deckQueryArgs,
   );
+
+  // Category study query parameters
+  const categoryQueryArgs =
+    studyMode === 'category' && categoryName
+      ? { category: categoryName, userId }
+      : 'skip';
+
+  const categoryFlashcards = useQuery(
+    api.flashcards.getFlashcardsByCategoryForStudying,
+    categoryQueryArgs,
+  );
   const recordAttempt = useMutation(api.userProgress.recordAttempt);
   const recordSessionAttempt = useMutation(
     api.sessionAttempts.recordSessionAttempt,
@@ -118,20 +131,23 @@ export function StudySession({
     mode: string;
     list: string | undefined;
     topic: string | undefined;
+    category: string | undefined;
     deck: string | undefined;
   }>({
     mode: studyMode,
     list: listName,
     topic: topicName,
+    category: categoryName,
     deck: deckId,
   });
 
   useEffect(() => {
-    // Check if study mode, list, topic, or deck has changed
+    // Check if study mode, list, topic, category, or deck has changed
     const hasModeChanged =
       prevStudyModeRef.current.mode !== studyMode ||
       prevStudyModeRef.current.list !== listName ||
       prevStudyModeRef.current.topic !== topicName ||
+      prevStudyModeRef.current.category !== categoryName ||
       prevStudyModeRef.current.deck !== deckId;
 
     if (hasModeChanged) {
@@ -150,6 +166,7 @@ export function StudySession({
         mode: studyMode,
         list: listName,
         topic: topicName,
+        category: categoryName,
         deck: deckId,
       };
       // Don't return early - continue to process cards if data is available
@@ -212,6 +229,25 @@ export function StudySession({
           options: item.options,
           lists: item.lists,
           deckId: item.deckId,
+        }));
+      } else {
+        // Still loading, don't process yet
+        flashcards = undefined;
+      }
+    } else if (studyMode === 'category') {
+      // Only process if we have data from the query
+      if (categoryFlashcards !== undefined) {
+        // Extract just the flashcard data from the category query result
+        flashcards = categoryFlashcards.map((item) => ({
+          _id: item._id,
+          _creationTime: item._creationTime,
+          question: item.question,
+          answer: item.answer,
+          type: item.type,
+          category: item.category,
+          tech: item.tech,
+          options: item.options,
+          lists: item.lists,
         }));
       } else {
         // Still loading, don't process yet
@@ -477,7 +513,11 @@ export function StudySession({
         ? listFlashcards === undefined
         : studyMode === 'topic'
           ? topicFlashcards === undefined
-          : dueFlashcards === undefined
+          : studyMode === 'category'
+            ? categoryFlashcards === undefined
+            : studyMode === 'deck'
+              ? deckFlashcards === undefined
+              : dueFlashcards === undefined
   ) {
     return (
       <div className="flex items-center justify-center min-h-64 p-4">
@@ -501,7 +541,11 @@ export function StudySession({
                 ? `Loading flashcards for ${listName?.replace(/([a-z])([0-9])/g, '$1 $2')}...`
                 : studyMode === 'topic'
                   ? `Loading flashcards for ${topicName}...`
-                  : 'Loading flashcards...'}
+                  : studyMode === 'category'
+                    ? `Loading flashcards for ${categoryName}...`
+                    : studyMode === 'deck'
+                      ? 'Loading deck flashcards...'
+                      : 'Loading flashcards...'}
             </p>
           </div>
         </div>
@@ -523,6 +567,12 @@ export function StudySession({
     } else if (studyMode === 'topic') {
       title = 'No cards in this topic';
       message = `No flashcards found for the "${topicName}" topic.`;
+    } else if (studyMode === 'category') {
+      title = 'No cards in this category';
+      message = `No flashcards found for the "${categoryName}" category.`;
+    } else if (studyMode === 'deck') {
+      title = 'No cards in this deck';
+      message = 'No flashcards found in this deck.';
     }
 
     return (

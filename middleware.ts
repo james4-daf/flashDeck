@@ -5,27 +5,19 @@ const isProtectedRoute = createRouteMatcher([
   '/library(.*)',
   '/dashboard(.*)',
   '/profile(.*)',
+  '/my-decks(.*)',
+  '/community(.*)',
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const pathname = req.nextUrl.pathname;
-
-  // Always log to see if middleware is running
-  console.log('[Middleware] Route:', pathname);
-
   if (isProtectedRoute(req)) {
-    console.log('[Middleware] Route is protected, checking auth...');
     const { userId } = await auth();
-    console.log('[Middleware] User ID:', userId || 'NOT AUTHENTICATED');
 
     if (!userId) {
-      console.log('[Middleware] Redirecting to /login');
       const loginUrl = new URL('/login', req.url);
-      loginUrl.searchParams.set('redirect_url', pathname);
+      loginUrl.searchParams.set('redirect_url', req.nextUrl.pathname);
       return NextResponse.redirect(loginUrl);
     }
-  } else {
-    console.log('[Middleware] Route is not protected');
   }
 
   return NextResponse.next();

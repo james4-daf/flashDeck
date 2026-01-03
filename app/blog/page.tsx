@@ -1,5 +1,6 @@
 'use client';
 
+import { PublicNav } from '@/components/PublicNav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,6 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
@@ -35,7 +35,7 @@ const blogPosts: BlogPost[] = [
     date: 'January 15, 2026',
     readTime: '10 min read',
     category: 'Learning Science',
-    featured: true,
+    featured: false,
     tags: ['active recall', 'spaced repetition', 'learning strategies'],
   },
   {
@@ -72,6 +72,39 @@ const blogPosts: BlogPost[] = [
       'best flashcard apps',
     ],
   },
+  {
+    slug: 'spaced-repetition-for-developers',
+    title:
+      'How Developers Can Use Spaced Repetition to Learn Faster: A Practical Guide',
+    description:
+      'Learn how developers can use spaced repetition to master programming concepts faster. Discover practical strategies for learning JavaScript, React, and other technologies with science-backed techniques.',
+    date: 'February 1, 2026',
+    readTime: '14 min read',
+    category: 'Programming',
+    featured: true,
+    tags: [
+      'spaced repetition for developers',
+      'learn programming faster',
+      'developer learning strategies',
+      'JavaScript spaced repetition',
+    ],
+  },
+  {
+    slug: 'active-recall-for-developers',
+    title: 'Active Recall for Developers: Learn Once, Remember Forever',
+    description:
+      'Discover how developers can use active recall to master programming concepts and retain knowledge long-term. Learn practical techniques for learning JavaScript, React, and other technologies effectively.',
+    date: 'February 10, 2026',
+    readTime: '13 min read',
+    category: 'Programming',
+    featured: false,
+    tags: [
+      'active recall for developers',
+      'active recall programming',
+      'developer learning techniques',
+      'retrieval practice',
+    ],
+  },
 ];
 
 const categories = ['All', 'Learning Science', 'Study Tips', 'Programming'];
@@ -102,28 +135,15 @@ export default function BlogPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Image
-                src="/flashdeckLogo.png"
-                alt="FlashDeck"
-                width={120}
-                height={40}
-                className="h-8 w-auto"
-              />
-              <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
-            </Link>
-            <Link href="/login">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav
+        rightContent={
+          <Link href="/login">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              Get Started
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Header */}
       <header className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">

@@ -1,3 +1,4 @@
+import { PublicNav } from '@/components/PublicNav';
 import { Button } from '@/components/ui/button';
 import {
   ArrowRight,
@@ -113,21 +114,17 @@ export default function BlogPost() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="text-xl font-bold text-slate-900">
-              FlashDeck
-            </Link>
-            <Link href="/login">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav
+        maxWidth="narrow"
+        showLogo={false}
+        rightContent={
+          <Link href="/login">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              Get Started
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Article Content */}
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -490,8 +487,22 @@ export default function BlogPost() {
             <p className="text-lg text-slate-700 mb-4">
               <strong>FlashDeck</strong> is a modern flashcard platform designed
               specifically for learning programming and technical concepts. It
-              combines spaced repetition with code-friendly features that make
-              it ideal for developers.
+              combines{' '}
+              <Link
+                href="/blog/spaced-repetition-for-developers"
+                className="text-blue-600 hover:text-blue-700 underline font-medium"
+              >
+                spaced repetition explained
+              </Link>{' '}
+              with code-friendly features that make it ideal for developers. Our
+              comprehensive guide on{' '}
+              <Link
+                href="/blog/spaced-repetition-for-developers"
+                className="text-blue-600 hover:text-blue-700 underline font-medium"
+              >
+                spaced repetition for developers
+              </Link>{' '}
+              covers everything you need to know.
             </p>
             <h3 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">
               Pros
@@ -753,8 +764,22 @@ export default function BlogPost() {
                 </h3>
               </div>
               <p className="text-slate-700">
-                All platforms offer spaced repetition, but Anki and FlashDeck
-                use proven algorithms optimized for long-term retention.
+                All platforms offer{' '}
+                <Link
+                  href="/blog/spaced-repetition-for-developers"
+                  className="text-blue-600 hover:text-blue-700 underline font-medium"
+                >
+                  spaced repetition
+                </Link>
+                , but Anki and FlashDeck use proven algorithms optimized for
+                long-term retention. Learn more about{' '}
+                <Link
+                  href="/blog/spaced-repetition-for-developers"
+                  className="text-blue-600 hover:text-blue-700 underline font-medium"
+                >
+                  how spaced repetition works
+                </Link>
+                .
               </p>
             </div>
             <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">

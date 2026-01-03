@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata, Viewport } from 'next';
 import { Rubik } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 
 const rubik = Rubik({
@@ -109,6 +110,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`antialiased ${rubik.className}`}>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-WNPKRD7HPF"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-WNPKRD7HPF');
+          `}
+        </Script>
         <ClerkProvider>
           <ConvexClientProvider>{children}</ConvexClientProvider>
         </ClerkProvider>

@@ -119,6 +119,42 @@ export const getFlashcardsByCategory = query({
   },
 });
 
+// Get flashcards by category for studying (includes user progress)
+export const getFlashcardsByCategoryForStudying = query({
+  args: {
+    category: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Get all flashcards in the category
+    const categoryFlashcards = await ctx.db
+      .query('flashcards')
+      .filter((q) => q.eq(q.field('category'), args.category))
+      .collect();
+
+    // Get user's progress for all flashcards
+    const userProgress = await ctx.db
+      .query('userProgress')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    // Create a map of flashcard progress for quick lookup
+    const progressMap = new Map();
+    userProgress.forEach((progress) => {
+      progressMap.set(progress.flashcardId, progress);
+    });
+
+    // Return ALL flashcards in the category with their progress
+    return categoryFlashcards.map((flashcard) => {
+      const progress = progressMap.get(flashcard._id);
+      return {
+        ...flashcard,
+        progress: progress || null,
+      };
+    });
+  },
+});
+
 // Get flashcards due for review for a specific user
 export const getDueFlashcards = query({
   args: { userId: v.string() },
@@ -540,6 +576,44 @@ export const getFlashcardsByTech = query({
     return allFlashcards.filter(
       (card) => card.tech?.toLowerCase() === techLower,
     );
+  },
+});
+
+// Get flashcards grouped by category for a specific tech
+export const getFlashcardsByTechGroupedByCategory = query({
+  args: {
+    tech: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const techLower = args.tech.toLowerCase();
+    
+    // Get all flashcards for this tech
+    const allFlashcards = await ctx.db.query('flashcards').collect();
+    const techFlashcards = allFlashcards.filter(
+      (card) => card.tech?.toLowerCase() === techLower,
+    );
+    
+    // Group by category
+    const grouped = new Map<string, Doc<'flashcards'>[]>();
+    
+    techFlashcards.forEach((card) => {
+      const category = card.category || 'Uncategorized';
+      if (!grouped.has(category)) {
+        grouped.set(category, []);
+      }
+      grouped.get(category)!.push(card);
+    });
+    
+    // Convert to object with counts
+    const result: Record<string, { flashcards: Doc<'flashcards'>[]; count: number }> = {};
+    grouped.forEach((flashcards, category) => {
+      result[category] = {
+        flashcards,
+        count: flashcards.length,
+      };
+    });
+    
+    return result;
   },
 });
 

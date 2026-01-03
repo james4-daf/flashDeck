@@ -1,4 +1,5 @@
 import { MDXContent } from '@/components/MDXContent';
+import { PublicNav } from '@/components/PublicNav';
 import fs from 'fs';
 import matter from 'gray-matter';
 import Link from 'next/link';
@@ -55,38 +56,33 @@ export default async function MDXPage({ params }: PageProps) {
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50 safe-top">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
+        <PublicNav
+          logoHref="/dashboard"
+          variant="solid"
+          showLogo={false}
+          rightContent={
+            <div className="flex items-center gap-6">
+              <Link
+                href="/library"
+                className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
+              >
+                Library
+              </Link>
               <Link
                 href="/dashboard"
-                className="text-xl font-bold text-slate-900 hover:text-blue-600 transition-colors"
+                className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
               >
-                FlashDeck
+                Dashboard
               </Link>
-              <div className="flex items-center gap-6">
-                <Link
-                  href="/library"
-                  className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
-                >
-                  Library
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Start Studying
-                </Link>
-              </div>
+              <Link
+                href="/dashboard"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Start Studying
+              </Link>
             </div>
-          </div>
-        </nav>
+          }
+        />
 
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <article className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">

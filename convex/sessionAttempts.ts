@@ -73,3 +73,70 @@ export const cleanupOldSessionAttempts = mutation({
     return { deletedCount: oldAttempts.length };
   },
 });
+
+// Get attempt history for a category, grouped by date
+export const getCategoryAttemptHistory = query({
+  args: {
+    userId: v.string(),
+    category: v.string(),
+    days: v.optional(v.number()), // Number of days to look back (default 30)
+  },
+  handler: async (ctx, args) => {
+    const days = args.days || 30;
+    const startDate = Date.now() - days * 24 * 60 * 60 * 1000;
+
+    // Get all flashcards in this category
+    const categoryFlashcards = await ctx.db
+      .query('flashcards')
+      .filter((q) => q.eq(q.field('category'), args.category))
+      .collect();
+
+    const flashcardIds = new Set(categoryFlashcards.map((card) => card._id));
+
+    if (flashcardIds.size === 0) {
+      return [];
+    }
+
+    // Get all session attempts for these flashcards by this user
+    const allAttempts = await ctx.db
+      .query('sessionAttempts')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .filter((q) => q.gte(q.field('attemptedAt'), startDate))
+      .collect();
+
+    // Filter to only attempts for flashcards in this category
+    const categoryAttempts = allAttempts.filter((attempt) =>
+      flashcardIds.has(attempt.flashcardId),
+    );
+
+    // Group by date (YYYY-MM-DD format)
+    const dateMap = new Map<string, { correct: number; incorrect: number; total: number }>();
+
+    categoryAttempts.forEach((attempt) => {
+      const date = new Date(attempt.attemptedAt).toISOString().split('T')[0];
+      if (!dateMap.has(date)) {
+        dateMap.set(date, { correct: 0, incorrect: 0, total: 0 });
+      }
+      const stats = dateMap.get(date)!;
+      stats.total += 1;
+      if (attempt.isCorrect) {
+        stats.correct += 1;
+      } else {
+        stats.incorrect += 1;
+      }
+    });
+
+    // Convert to array and sort by date
+    const result = Array.from(dateMap.entries())
+      .map(([date, stats]) => ({
+        date,
+        correct: stats.correct,
+        incorrect: stats.incorrect,
+        total: stats.total,
+        accuracy: stats.total > 0 ? (stats.correct / stats.total) * 100 : 0,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return result;
+  },
+});

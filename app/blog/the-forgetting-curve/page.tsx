@@ -1,3 +1,4 @@
+import { PublicNav } from '@/components/PublicNav';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Brain, TrendingDown, TrendingUp, Zap } from 'lucide-react';
 import type { Metadata } from 'next';
@@ -103,21 +104,17 @@ export default function BlogPost() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="text-xl font-bold text-slate-900">
-              FlashDeck
-            </Link>
-            <Link href="/login">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav
+        maxWidth="narrow"
+        showLogo={false}
+        rightContent={
+          <Link href="/login">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              Get Started
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Article Content */}
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -321,10 +318,15 @@ export default function BlogPost() {
               1. Spaced Repetition: Review at Optimal Intervals
             </h3>
             <p className="text-lg text-slate-700 mb-4">
-              <strong>Spaced repetition</strong> is the practice of reviewing
-              information at increasing intervals over time. Instead of cramming
-              everything in one session, you space out your reviews
-              strategically.
+              <Link
+                href="/blog/spaced-repetition-for-developers"
+                className="text-blue-600 hover:text-blue-700 underline font-medium"
+              >
+                Spaced repetition
+              </Link>{' '}
+              is the practice of reviewing information at increasing intervals
+              over time. Instead of cramming everything in one session, you
+              space out your reviews strategically.
             </p>
             <p className="text-lg text-slate-700 mb-4">
               Here&apos;s how it works:
@@ -344,17 +346,30 @@ export default function BlogPost() {
               </li>
             </ul>
             <p className="text-lg text-slate-700 mb-4">
-              Studies show that spaced repetition can improve retention by up to{' '}
-              <strong>200%</strong> compared to massed practice (cramming).
+              Studies show that{' '}
+              <Link
+                href="/blog/spaced-repetition-for-developers"
+                className="text-blue-600 hover:text-blue-700 underline font-medium"
+              >
+                spaced repetition learning method
+              </Link>{' '}
+              can improve retention by up to <strong>200%</strong> compared to
+              massed practice (cramming). Learn how to implement it effectively
+              in our developer-focused guide.
             </p>
             <h3 className="text-2xl font-semibold text-slate-900 mt-8 mb-4">
               2. Active Recall: Test Yourself Instead of Re-reading
             </h3>
             <p className="text-lg text-slate-700 mb-4">
-              <strong>Active recall</strong> (also called retrieval practice)
-              involves actively retrieving information from memory rather than
-              passively reviewing it. Instead of re-reading your notes, you test
-              yourself.
+              <Link
+                href="/blog/active-recall-for-developers"
+                className="text-blue-600 hover:text-blue-700 underline font-medium"
+              >
+                Active recall
+              </Link>{' '}
+              (also called retrieval practice) involves actively retrieving
+              information from memory rather than passively reviewing it.
+              Instead of re-reading your notes, you test yourself.
             </p>
             <p className="text-lg text-slate-700 mb-4">
               Research by cognitive scientists like Henry Roediger and Jeffrey
@@ -383,10 +398,21 @@ export default function BlogPost() {
               3. Combine Spaced Repetition with Active Recall
             </h3>
             <p className="text-lg text-slate-700 mb-4">
-              The most powerful approach combines both strategies: use active
-              recall at spaced intervals. This is exactly what spaced repetition
-              systems do—they schedule active recall sessions at optimal
-              intervals.
+              The most powerful approach combines both strategies: use{' '}
+              <Link
+                href="/blog/active-recall-for-developers"
+                className="text-blue-600 hover:text-blue-700 underline font-medium"
+              >
+                active recall
+              </Link>{' '}
+              at spaced intervals. This is exactly what{' '}
+              <Link
+                href="/blog/spaced-repetition-for-developers"
+                className="text-blue-600 hover:text-blue-700 underline font-medium"
+              >
+                spaced repetition systems
+              </Link>{' '}
+              do—they schedule active recall sessions at optimal intervals.
             </p>
             <p className="text-lg text-slate-700 mb-4">
               When you use flashcards with spaced repetition:

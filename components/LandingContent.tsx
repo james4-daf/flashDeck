@@ -1,8 +1,9 @@
 'use client';
 
+import { PricingSection } from '@/components/PricingSection';
+import { PublicNav } from '@/components/PublicNav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { PricingSection } from '@/components/PricingSection';
 import { ArrowRight, BookOpen, CheckCircle2, Target, Zap } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -80,34 +81,20 @@ export function LandingContent() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50 safe-top">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Image
-                src="/flashdeckLogo.png"
-                alt="FlashDeck"
-                width={120}
-                height={40}
-                className="h-8 w-auto"
-                priority
-              />
-              <h1 className="text-xl font-bold text-slate-900">FlashDeck</h1>
+      <PublicNav
+        rightContent={
+          <div className="flex items-center gap-4">
+            <a href="#pricing">
+              <Button variant="ghost">Pricing</Button>
+            </a>
+            <Link href="/login">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                Get Started
+              </Button>
             </Link>
-            <div className="flex items-center gap-4">
-              <a href="#pricing">
-                <Button variant="ghost">Pricing</Button>
-              </a>
-              <Link href="/login">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                  Get Started
-                </Button>
-              </Link>
-            </div>
           </div>
-        </div>
-      </nav>
+        }
+      />
 
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 sm:pt-32 sm:pb-24">

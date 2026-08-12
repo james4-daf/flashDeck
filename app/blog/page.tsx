@@ -1,19 +1,15 @@
-'use client';
-
+import { BlogFilter } from '@/components/blog/BlogFilter';
 import { PublicNav } from '@/components/PublicNav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   ArrowRight,
   BookOpen,
   Clock,
-  Search,
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
 
 export type BlogPost = {
   slug: string;
@@ -107,31 +103,9 @@ const blogPosts: BlogPost[] = [
   },
 ];
 
-const categories = ['All', 'Learning Science', 'Study Tips', 'Programming'];
-
 export default function BlogPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-
-  const filteredPosts = useMemo(() => {
-    return blogPosts.filter((post) => {
-      const matchesSearch =
-        searchQuery === '' ||
-        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.tags?.some((tag) =>
-          tag.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
-
-      const matchesCategory =
-        selectedCategory === 'All' || post.category === selectedCategory;
-
-      return matchesSearch && matchesCategory;
-    });
-  }, [searchQuery, selectedCategory]);
-
   const featuredPost = blogPosts.find((post) => post.featured);
-  const regularPosts = filteredPosts.filter((post) => !post.featured);
+  const regularPosts = blogPosts.filter((post) => !post.featured);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -160,40 +134,11 @@ export default function BlogPage() {
           </p>
         </div>
 
-        {/* Search and Filter */}
-        <div className="max-w-3xl mx-auto mb-8">
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-            <Input
-              type="text"
-              placeholder="Search articles..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 text-lg"
-            />
-          </div>
-
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-2 justify-center">
-            {categories.map((category) => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? 'default' : 'outline'}
-                onClick={() => setSelectedCategory(category)}
-                className={
-                  selectedCategory === category
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : ''
-                }
-              >
-                {category}
-              </Button>
-            ))}
-          </div>
-        </div>
+        {/* Client-side Filter Component */}
+        <BlogFilter posts={blogPosts} />
       </header>
 
-      {/* Featured Post */}
+      {/* Featured Post - Server Rendered */}
       {featuredPost && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
           <div className="flex items-center gap-2 mb-4">
@@ -242,75 +187,63 @@ export default function BlogPage() {
         </section>
       )}
 
-      {/* All Blog Posts */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      {/* All Blog Posts - Server Rendered (for SEO) */}
+      <section
+        id="blog-posts"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16"
+      >
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold text-slate-900">
-            {selectedCategory === 'All' ? 'All Articles' : selectedCategory}
-          </h2>
-          <span className="text-slate-600">
+          <h2 className="text-3xl font-bold text-slate-900">All Articles</h2>
+          <span className="text-slate-600" id="post-count">
             {regularPosts.length} article{regularPosts.length !== 1 ? 's' : ''}
           </span>
         </div>
 
-        {regularPosts.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {regularPosts.map((post) => (
-              <Link key={post.slug} href={`/blog/${post.slug}`}>
-                <Card className="h-full hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-blue-200 flex flex-col">
-                  <CardContent className="pt-6 flex flex-col flex-1">
-                    <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
-                      <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded">
-                        {post.category}
-                      </span>
-                      <span>•</span>
-                      <time dateTime={post.date}>{post.date}</time>
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-3 line-clamp-2">
-                      {post.title}
-                    </h3>
-                    <p className="text-slate-600 mb-4 line-clamp-3 flex-1">
-                      {post.description}
-                    </p>
-                    <div className="flex items-center justify-between mt-auto">
-                      <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <Clock className="h-4 w-4" />
-                        <span>{post.readTime}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="group text-blue-600 hover:text-blue-700"
-                      >
-                        Read
-                        <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16">
-            <Search className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-2xl font-semibold text-slate-900 mb-2">
-              No articles found
-            </h3>
-            <p className="text-slate-600 mb-6">
-              Try adjusting your search or filter criteria
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedCategory('All');
-              }}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {regularPosts.map((post) => (
+            <Link
+              key={post.slug}
+              href={`/blog/${post.slug}`}
+              data-category={post.category}
+              data-title={post.title.toLowerCase()}
+              data-description={post.description.toLowerCase()}
+              data-tags={post.tags?.join(' ').toLowerCase()}
+              className="blog-post-card"
             >
-              Clear Filters
-            </Button>
-          </div>
-        )}
+              <Card className="h-full hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-blue-200 flex flex-col">
+                <CardContent className="pt-6 flex flex-col flex-1">
+                  <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
+                    <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded">
+                      {post.category}
+                    </span>
+                    <span>•</span>
+                    <time dateTime={post.date}>{post.date}</time>
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-3 line-clamp-2">
+                    {post.title}
+                  </h3>
+                  <p className="text-slate-600 mb-4 line-clamp-3 flex-1">
+                    {post.description}
+                  </p>
+                  <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                      <Clock className="h-4 w-4" />
+                      <span>{post.readTime}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="group text-blue-600 hover:text-blue-700"
+                    >
+                      Read
+                      <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </section>
 
       {/* CTA */}

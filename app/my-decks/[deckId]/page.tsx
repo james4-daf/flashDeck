@@ -6,6 +6,7 @@ import { FlashcardCreationForm } from '@/components/FlashcardCreationForm';
 import { LibraryFlashcard } from '@/components/LibraryFlashcard';
 import { StudySession } from '@/components/StudySession';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useUser } from '@clerk/nextjs';
@@ -75,11 +76,18 @@ function DeckDetailContent() {
 
   if (deck === undefined) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading deck...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <AppHeader />
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-12 lg:px-8">
+          <Skeleton className="mb-4 h-10 w-40" />
+          <Skeleton className="mb-2 h-9 w-2/3 max-w-md" />
+          <Skeleton className="mb-8 h-5 w-full max-w-xl" />
+          <div className="grid gap-4 md:grid-cols-2">
+            <Skeleton className="h-36 rounded-lg" />
+            <Skeleton className="h-36 rounded-lg" />
+            <Skeleton className="h-36 rounded-lg md:col-span-2" />
+          </div>
+        </main>
       </div>
     );
   }

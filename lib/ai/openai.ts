@@ -26,14 +26,53 @@ export interface DocumentFlashcardsResult {
   flashcards: FlashcardGenerationResult[];
 }
 
+export type GenerateFlashcardExistingCard = {
+  question: string;
+  answer: string;
+};
+
+export type GenerateFlashcardOptions = {
+  /** Q&A pairs already in the deck; model must not repeat or closely paraphrase these. */
+  existingCards?: GenerateFlashcardExistingCard[];
+};
+
+function truncateForPrompt(text: string, maxLen: number): string {
+  const t = text.trim();
+  if (t.length <= maxLen) return t;
+  return `${t.slice(0, maxLen - 1)}…`;
+}
+
 /**
  * Generate a flashcard from user-provided topic/context
  */
 export async function generateFlashcard(
   topic: string,
   context?: string,
+  options?: GenerateFlashcardOptions,
 ): Promise<FlashcardGenerationResult> {
-  const prompt = `Generate a single educational flashcard about "${topic}". ${context ? `Context: ${context}` : ''}
+  const maxExistingInPrompt = 60;
+  const rawExisting = options?.existingCards ?? [];
+  const trimmedExisting = rawExisting.slice(0, maxExistingInPrompt).map((c) => ({
+    question: truncateForPrompt(c.question, 280),
+    answer: truncateForPrompt(c.answer, 280),
+  }));
+
+  let userPrompt = `Generate a single educational flashcard about "${topic}". ${context ? `Context: ${context}` : ''}
+
+CRITICAL — Format: basic Q&A only. One clear question and one concise plain-text answer. Do not produce multiple choice, true/false wording, fill-in-the-blank with blanks, or code-snippet style cards.`;
+
+  if (trimmedExisting.length > 0) {
+    userPrompt += `
+
+The following question/answer pairs are ALREADY in this deck. You MUST create a different card: another angle, subtopic, or detail within the same topic. Do not repeat or closely paraphrase any existing question or answer.
+
+`;
+    trimmedExisting.forEach((c, i) => {
+      userPrompt += `${i + 1}. Q: ${c.question}\n   A: ${c.answer}\n`;
+    });
+  }
+
+  userPrompt += `
 
 Return a JSON object with this exact structure:
 {
@@ -45,6 +84,8 @@ Return a JSON object with this exact structure:
 
 Make the question clear and educational. The answer should be concise but complete.`;
 
+  const temperature = trimmedExisting.length > 0 ? 0.85 : 0.7;
+
   const maxRetries = 3;
   let lastError: Error | null = null;
 
@@ -55,14 +96,15 @@ Make the question clear and educational. The answer should be concise but comple
         messages: [
           {
             role: 'system',
-            content: 'You are an educational assistant that creates high-quality flashcards. Always return valid JSON.',
+            content:
+              'You are an educational assistant that creates high-quality basic Q&A flashcards (plain question + short text answer only). Always return valid JSON.',
           },
           {
             role: 'user',
-            content: prompt,
+            content: userPrompt,
           },
         ],
-        temperature: 0.7,
+        temperature,
         response_format: { type: 'json_object' },
         max_tokens: 500,
       });

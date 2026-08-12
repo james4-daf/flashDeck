@@ -1,7 +1,9 @@
 'use client';
 
+import { FlashcardDemoSection } from '@/components/FlashcardDemoSection';
 import { PricingSection } from '@/components/PricingSection';
 import { PublicNav } from '@/components/PublicNav';
+import { SpacedRepetitionGraph } from '@/components/SpacedRepetitionGraph';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, BookOpen, CheckCircle2, Target, Zap } from 'lucide-react';
@@ -125,6 +127,23 @@ export function LandingContent() {
           </p>
         </div>
       </section>
+
+      {/* Spaced Repetition Benefits Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 bg-white/50">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+            Why Spaced Repetition Works for Developers
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            Traditional learning leads to rapid forgetting. Spaced repetition
+            ensures concepts stick in your long-term memory.
+          </p>
+        </div>
+        <SpacedRepetitionGraph />
+      </section>
+
+      {/* Flashcard Demo Section */}
+      <FlashcardDemoSection />
 
       {/* Features Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">

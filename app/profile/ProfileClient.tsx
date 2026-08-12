@@ -4,6 +4,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { UpgradeModal } from '@/components/UpgradeModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/convex/_generated/api';
 import { SignedIn, SignedOut, SignOutButton, useUser } from '@clerk/nextjs';
 import { useMutation, useQuery } from 'convex/react';
@@ -117,7 +118,7 @@ function ProfileContent() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <AppHeader />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
             Profile
@@ -170,11 +171,13 @@ function ProfileContent() {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                  <p className="text-xs sm:text-sm text-slate-600">
-                    Loading activity...
-                  </p>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="space-y-2 text-center">
+                      <Skeleton className="mx-auto h-8 w-12" />
+                      <Skeleton className="mx-auto h-3 w-16" />
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -357,11 +360,16 @@ function ProfileContent() {
                   </div>
                 </>
               ) : (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-slate-600">
-                    Loading subscription status...
-                  </p>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-5 w-40" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-5 w-48" />
+                  </div>
+                  <Skeleton className="h-10 w-full max-w-xs" />
                 </div>
               )}
             </CardContent>

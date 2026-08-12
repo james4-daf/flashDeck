@@ -160,4 +160,12 @@ export default defineSchema({
   })
     .index('by_email', ['email'])
     .index('by_clerk_id', ['clerkId']),
+
+  // User-authored notes (Tiptap JSON in contentJson)
+  userNotes: defineTable({
+    userId: v.string(),
+    title: v.string(),
+    contentJson: v.string(),
+    updatedAt: v.number(),
+  }).index('by_user', ['userId']),
 });

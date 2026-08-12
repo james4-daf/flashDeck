@@ -20,6 +20,7 @@ import type * as http from "../http.js";
 import type * as sessionAttempts from "../sessionAttempts.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as topics from "../topics.js";
+import type * as userNotes from "../userNotes.js";
 import type * as userPreferences from "../userPreferences.js";
 import type * as userProgress from "../userProgress.js";
 import type * as users from "../users.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   sessionAttempts: typeof sessionAttempts;
   subscriptions: typeof subscriptions;
   topics: typeof topics;
+  userNotes: typeof userNotes;
   userPreferences: typeof userPreferences;
   userProgress: typeof userProgress;
   users: typeof users;

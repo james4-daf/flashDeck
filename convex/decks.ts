@@ -207,6 +207,27 @@ export const getDeckFlashcards = query({
   },
 });
 
+/** Deck flashcards only if the user owns the deck (for server-side AI / trusted callers). */
+export const getDeckFlashcardsIfOwner = query({
+  args: {
+    deckId: v.id('decks'),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const deck = await ctx.db.get(args.deckId);
+    if (!deck || deck.createdBy !== args.userId) {
+      return null;
+    }
+
+    const flashcards = await ctx.db
+      .query('flashcards')
+      .filter((q) => q.eq(q.field('deckId'), args.deckId))
+      .collect();
+
+    return flashcards;
+  },
+});
+
 // Get flashcards in a deck for studying (with user progress)
 export const getDeckFlashcardsForStudying = query({
   args: {

@@ -4,6 +4,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { DeckCreationDialog } from '@/components/DeckCreationDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useUser } from '@clerk/nextjs';
@@ -79,11 +80,19 @@ function MyDecksContent() {
         </div>
 
         {decks === undefined ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-slate-600">Loading your decks...</p>
-            </div>
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-7 w-3/4" />
+                  <Skeleton className="mt-2 h-4 w-full" />
+                </CardHeader>
+                <CardContent className="flex justify-end gap-2">
+                  <Skeleton className="h-9 w-20" />
+                  <Skeleton className="h-9 w-20" />
+                </CardContent>
+              </Card>
+            ))}
           </div>
         ) : decks.length === 0 ? (
           <div className="text-center py-12">

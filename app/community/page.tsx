@@ -4,6 +4,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { DeckCard } from '@/components/DeckCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
 import { Authenticated, useQuery } from 'convex/react';
@@ -45,11 +46,21 @@ function CommunityContent() {
 
         {/* Decks Grid */}
         {decks === undefined ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-slate-600">Loading community decks...</p>
-            </div>
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+              >
+                <Skeleton className="mb-2 h-6 w-2/3" />
+                <Skeleton className="mb-4 h-4 w-full" />
+                <div className="flex gap-4">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <Skeleton className="mt-4 h-9 w-full" />
+              </div>
+            ))}
           </div>
         ) : decks.length === 0 ? (
           <div className="text-center py-12">

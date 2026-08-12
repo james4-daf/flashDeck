@@ -6,6 +6,7 @@ import { StudySession } from '@/components/StudySession';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
 import { Authenticated, useMutation, useQuery } from 'convex/react';
@@ -264,11 +265,10 @@ function DashboardContent() {
             </CardHeader>
             <CardContent>
               {flashcards === undefined ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-slate-600">
-                    Checking for due flashcards...
-                  </p>
+                <div className="space-y-4 py-2">
+                  <Skeleton className="h-5 w-full max-w-md" />
+                  <Skeleton className="h-11 w-full max-w-xs" />
+                  <Skeleton className="h-4 w-2/3" />
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -537,6 +537,20 @@ function DashboardContent() {
                     </span>
                   </Button>
                 )}
+
+                <Link href="/notes">
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 sm:h-16 text-left flex flex-col items-start justify-center"
+                  >
+                    <span className="font-medium text-sm sm:text-base">
+                      Study notes
+                    </span>
+                    <span className="text-xs sm:text-sm text-slate-500">
+                      Write notes, highlight to make cards, AI from text
+                    </span>
+                  </Button>
+                </Link>
 
                 <Link href="/my-decks">
                   <Button

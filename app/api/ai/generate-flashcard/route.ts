@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { generateFlashcard } from '@/lib/ai/openai';
 import { rateLimiters } from '@/lib/rateLimit';
 import { logError } from '@/lib/logger';
@@ -41,13 +42,32 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { topic, context } = body;
+    const { topic, context, deckId: rawDeckId } = body;
 
     if (!topic || typeof topic !== 'string' || topic.trim().length === 0) {
       return NextResponse.json(
         { error: 'Topic is required and must be a non-empty string' },
         { status: 400 },
       );
+    }
+
+    let existingCards: { question: string; answer: string }[] = [];
+    if (rawDeckId != null && typeof rawDeckId === 'string' && rawDeckId.trim() !== '') {
+      const deckCards = await convex.query(api.decks.getDeckFlashcardsIfOwner, {
+        deckId: rawDeckId.trim() as Id<'decks'>,
+        userId: authenticatedUserId,
+      });
+      if (deckCards === null) {
+        return NextResponse.json(
+          { error: 'FORBIDDEN', message: 'Deck not found or you do not have access.' },
+          { status: 403 },
+        );
+      }
+      const sorted = [...deckCards].sort((a, b) => b._creationTime - a._creationTime);
+      existingCards = sorted.map((card) => ({
+        question: card.question,
+        answer: Array.isArray(card.answer) ? card.answer.join(' / ') : card.answer,
+      }));
     }
 
     // ✅ ATOMIC: Check limit AND reserve a slot BEFORE generating
@@ -71,7 +91,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate flashcard using AI (slot is already reserved)
-    const flashcard = await generateFlashcard(topic.trim(), context?.trim());
+    const flashcard = await generateFlashcard(topic.trim(), context?.trim(), {
+      existingCards,
+    });
 
     return NextResponse.json({
       success: true,

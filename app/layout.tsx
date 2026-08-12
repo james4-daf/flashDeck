@@ -6,6 +6,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata, Viewport } from 'next';
 import { Rubik } from 'next/font/google';
 import Script from 'next/script';
+
 import './globals.css';
 
 const rubik = Rubik({
@@ -119,7 +120,7 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-WNPKRD7HPF');
+            gtag('config', '${process.env.NEXT_PUBLIC_GA_ID || 'G-WNPKRD7HPF'}');
           `}
         </Script>
         <ClerkProvider>

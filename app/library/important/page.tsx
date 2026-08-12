@@ -1,6 +1,7 @@
 'use client';
 
 import { AppHeader } from '@/components/AppHeader';
+import { FlashcardListPageSkeleton } from '@/components/FlashcardListPageSkeleton';
 import { LibraryFlashcard } from '@/components/LibraryFlashcard';
 import { StudySession } from '@/components/StudySession';
 import { UpgradeModal } from '@/components/UpgradeModal';
@@ -101,17 +102,7 @@ export default function ImportantListPage() {
   }
 
   if (!importantFlashcards || !userProgress) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <AppHeader />
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-slate-600">Loading important flashcards...</p>
-          </div>
-        </main>
-      </div>
-    );
+    return <FlashcardListPageSkeleton />;
   }
 
   // Map progress by flashcardId for quick lookup
@@ -132,7 +123,7 @@ export default function ImportantListPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <AppHeader />
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">

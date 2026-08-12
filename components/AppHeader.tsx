@@ -20,6 +20,7 @@ export function AppHeader() {
 
   const navLinks = [
     { href: '/my-decks', label: 'My Decks' },
+    { href: '/notes', label: 'Notes' },
     { href: '/library', label: 'Library' },
     { href: '/community', label: 'Community' },
   ];

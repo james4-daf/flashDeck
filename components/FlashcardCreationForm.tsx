@@ -92,6 +92,7 @@ export function FlashcardCreationForm({
         body: JSON.stringify({
           topic: aiTopic.trim(),
           context: aiContext.trim() || undefined,
+          deckId,
         }),
       });
 
@@ -103,6 +104,9 @@ export function FlashcardCreationForm({
           setShowUpgradeModal(true);
           setShowAIDialog(false);
           return;
+        }
+        if (data.error === 'FORBIDDEN') {
+          throw new Error(data.message || 'You do not have access to this deck.');
         }
         throw new Error(data.message || 'Failed to generate flashcard');
       }
